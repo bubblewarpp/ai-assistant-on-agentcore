@@ -52,6 +52,7 @@ PROJECT_CANVASES_TABLE = os.environ.get("PROJECT_CANVASES_TABLE")
 PROJECTS_KB_ID = os.environ.get("PROJECTS_KB_ID")
 PROJECTS_KB_DATA_SOURCE_ID = os.environ.get("PROJECTS_KB_DATA_SOURCE_ID")
 PROJECT_MEMORY_ID = os.environ.get("PROJECT_MEMORY_ID")
+AGENT_PROFILES_TABLE = os.environ.get("AGENT_PROFILES_TABLE")
 
 
 def create_dynamodb_client(region: str = None) -> boto3.client:

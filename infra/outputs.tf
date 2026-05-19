@@ -58,14 +58,23 @@ output "sparky_model_config_frontend" {
     default_model_id = var.sparky_models.default_model_id
     models = [
       for m in var.sparky_models.models : {
-        id               = m.id
-        label            = m.label
-        description      = m.description
-        reasoning_type   = m.reasoning_type
-        reasoning_levels = length(m.reasoning_type == "budget" ? m.budget_mapping : m.effort_mapping)
+        id             = m.id
+        label          = m.label
+        description    = m.description
+        reasoning_type = m.reasoning_type
+        reasoning_levels = (
+          m.reasoning_type == "none"
+          ? 0
+          : length(m.reasoning_type == "budget" ? m.budget_mapping : m.effort_mapping)
+        )
         reasoning_labels = (m.reasoning_type == "effort"
           ? [for k in sort(keys(m.effort_mapping)) : local.effort_label_map[m.effort_mapping[k]]]
-          : slice(local.budget_labels, 0, length(m.budget_mapping)))
+          : (
+            m.reasoning_type == "budget"
+            ? slice(local.budget_labels, 0, length(m.budget_mapping))
+            : []
+          )
+        )
       }
     ]
   })

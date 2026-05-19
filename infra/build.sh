@@ -14,6 +14,7 @@ ROOT="$PWD"
 kb_indexer_build_path="${build_path}/kb_indexer_code/"
 expiry_cleanup_build_path="${build_path}/expiry_cleanup_code/"
 task_executor_build_path="${build_path}/task_executor_code/"
+memory_consolidator_build_path="${build_path}/memory_consolidator_code/"
 
 # Clean up existing build directories
 # rm -rf "$authorizer_build_path"
@@ -22,6 +23,7 @@ task_executor_build_path="${build_path}/task_executor_code/"
 rm -rf "$kb_indexer_build_path"
 rm -rf "$expiry_cleanup_build_path"
 rm -rf "$task_executor_build_path"
+rm -rf "$memory_consolidator_build_path"
 
 # Create new build directories
 # mkdir -p "$authorizer_build_path"
@@ -30,6 +32,7 @@ rm -rf "$task_executor_build_path"
 mkdir -p "$kb_indexer_build_path"
 mkdir -p "$expiry_cleanup_build_path"
 mkdir -p "$task_executor_build_path"
+mkdir -p "$memory_consolidator_build_path"
 
 # echo "Building lambda layers"
 # cd "$ROOT"
@@ -66,3 +69,7 @@ cp -r ../backend/expiry_cleanup/*.py "$expiry_cleanup_build_path/"
 cd "$ROOT"
 echo "Building task_executor lambda"
 cp -r ../backend/task_executor/*.py "$task_executor_build_path/"
+
+cd "$ROOT"
+echo "Building memory_consolidator lambda"
+cp -r ../backend/memory_consolidator/*.py "$memory_consolidator_build_path/"

@@ -24,6 +24,7 @@ from tools import (
     generate_download_link,
     execute_code,
 )
+from memory_tools import remember_memory, recall_user_memory
 from browser import browser_client, BrowserToolError  # noqa: F401
 from tools import browse_web
 from canvas import ALL_CREATE_TOOLS, update_canvas
@@ -73,6 +74,8 @@ async def lifespan(app: FastAPI):
                 manage_skill,
                 generate_download_link,
                 execute_code,
+                remember_memory,
+                recall_user_memory,
                 browse_web,
                 *ALL_CREATE_TOOLS,
                 update_canvas,

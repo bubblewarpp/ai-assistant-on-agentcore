@@ -1,3 +1,4 @@
+/* global URL */
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import "./ChatInput.css";
 import { useTheme } from "../ThemeContext";
@@ -17,6 +18,7 @@ import {
 } from "lucide-react";
 import { validateAttachment, getValidationErrorMessage, encodeAttachments } from "./attachments";
 import { getSelectedModelId } from "./ModelSelector";
+import { getSelectedProfileId } from "./ProfileSelector";
 import { toast } from "sonner";
 
 function ActiveModeButton({ icon, label, onRemove, disabled, title }) {
@@ -214,7 +216,14 @@ const ChatInput = ({
     preparingRef.current = true;
     try {
       const modelId = getSelectedModelId();
-      await functions.prepareSession(currentSessionId, null, processedThinkingBudget, modelId);
+      await functions.prepareSession(
+        currentSessionId,
+        null,
+        processedThinkingBudget,
+        modelId,
+        false,
+        getSelectedProfileId()
+      );
     } catch (error) {
       console.error("Error preparing session:", error);
     } finally {
@@ -265,11 +274,22 @@ const ChatInput = ({
     const handleModelChange = (event) => {
       const { modelId } = event.detail;
       if (functions?.prepareSession && currentSessionId) {
-        functions.prepareSession(currentSessionId, null, processedThinkingBudget, modelId);
+        functions.prepareSession(
+          currentSessionId,
+          null,
+          processedThinkingBudget,
+          modelId,
+          false,
+          getSelectedProfileId()
+        );
       }
     };
     window.addEventListener("modelChanged", handleModelChange);
-    return () => window.removeEventListener("modelChanged", handleModelChange);
+    window.addEventListener("profileChanged", handleModelChange);
+    return () => {
+      window.removeEventListener("modelChanged", handleModelChange);
+      window.removeEventListener("profileChanged", handleModelChange);
+    };
   }, [functions, currentSessionId, processedThinkingBudget]);
 
   // Initialize toggle states
@@ -324,7 +344,11 @@ const ChatInput = ({
       sessionId: currentSessionId,
       timestamp: new Date().toISOString(),
       toggleStates: { ...toggleStates },
-      config: { model_id: getSelectedModelId(), budget_level: processedThinkingBudget },
+      config: {
+        model_id: getSelectedModelId(),
+        budget_level: processedThinkingBudget,
+        profile_id: getSelectedProfileId(),
+      },
     };
 
     if (attachedFiles.length > 0) {

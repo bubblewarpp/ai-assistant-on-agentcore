@@ -1,6 +1,7 @@
+/* global MutationObserver */
 import { useRef, useCallback, useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { PlusCircle, ToolCase, Search, Lightbulb, FolderOpen, Clock } from "lucide-react";
+import { PlusCircle, ToolCase, Search, Lightbulb, FolderOpen, Clock, Bot } from "lucide-react";
 import { Sidebar, SidebarContent, useSidebar } from "@/components/ui/sidebar";
 import { SidebarHeader } from "./SidebarHeader";
 import { NavMain } from "./NavMain";
@@ -115,6 +116,11 @@ export function AppSidebar({
       title: "Skills",
       url: "/skills",
       icon: Lightbulb,
+    },
+    {
+      title: "Profiles",
+      url: "/profiles",
+      icon: Bot,
     },
     {
       title: "Projects",

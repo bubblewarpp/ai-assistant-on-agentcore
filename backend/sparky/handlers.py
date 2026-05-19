@@ -360,6 +360,22 @@ class RequestHandlers:
         try:
             budget_level = extract_budget_level(request.input)
             model_id = extract_model_id(request.input)
+            profile_id = request.input.get("profile_id", "")
+            profile = None
+            profile_persona = "generic"
+            if profile_id:
+                from agent_profile_service import agent_profile_service
+
+                profile = await agent_profile_service.get_profile(user_id, profile_id)
+                if not profile:
+                    return error_envelope(
+                        "validation_error", "Agent profile not found."
+                    )
+                profile_persona = profile.get("persona") or "generic"
+                if model_id is None:
+                    model_id = profile.get("default_model_id")
+                if budget_level is None and profile.get("budget_level") is not None:
+                    budget_level = int(profile["budget_level"])
             # Support both 'refresh' (new) and 'refresh_tools' (legacy) parameters
             refresh = request.input.get(
                 "refresh", request.input.get("refresh_tools", False)
@@ -384,11 +400,18 @@ class RequestHandlers:
                 logger.debug(
                     f"Refresh requested — re-running preference reconciliation for user {user_id}"
                 )
-                await agent_manager.build_tools_with_reconciliation(user_id)
-            elif agent_manager.current_user_id != user_id:
+                await agent_manager.build_tools_with_reconciliation(
+                    user_id, profile_persona
+                )
+            elif (
+                agent_manager.current_user_id != user_id
+                or agent_manager.current_persona != profile_persona
+            ):
                 # First time for this user — need initial tool load
                 logger.debug(f"New user {user_id} — running preference reconciliation")
-                await agent_manager.build_tools_with_reconciliation(user_id)
+                await agent_manager.build_tools_with_reconciliation(
+                    user_id, profile_persona
+                )
             # else: refresh=false and same user → reuse Active_Tool_Set from session init (Req 5.2)
 
             # Get agent (uses cached tools, recreates if model/budget changed)
@@ -473,6 +496,7 @@ class RequestHandlers:
                     "budget_level": agent_manager.current_budget_level,
                     "thinking_enabled": agent_manager.current_budget_level > 0,
                     "model_id": effective_model_id,
+                    "profile": profile,
                     "canvases": canvases_state,
                     "project": project_info,
                 },

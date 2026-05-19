@@ -5,6 +5,7 @@ import { ToolConfigPage } from "./pages/ToolConfig";
 import { SkillsPage } from "./pages/Skills";
 import { ProjectsPage } from "./pages/Projects";
 import { ScheduledTasksPage } from "./pages/ScheduledTasks";
+import { ProfilesPage } from "./pages/Profiles";
 
 // Wrapper component to handle session ID from URL path
 function AgentWrapper({ user }) {
@@ -23,6 +24,7 @@ function Main({ user }) {
       <Route path="/tools" element={<ToolConfigPage />} />
       {/* Skills Management route */}
       <Route path="/skills" element={<SkillsPage />} />
+      <Route path="/profiles" element={<ProfilesPage />} />
       {/* Projects route */}
       <Route path="/projects" element={<ProjectsPage />} />
       {/* Scheduled Tasks route */}

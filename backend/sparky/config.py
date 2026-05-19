@@ -57,7 +57,7 @@ for _m in _sparky_config["models"]:
     }
     if _m["reasoning_type"] == "budget":
         _entry["budget_mapping"] = {int(k): v for k, v in _m["budget_mapping"].items()}
-    else:
+    elif _m["reasoning_type"] == "effort":
         _entry["effort_mapping"] = {int(k): v for k, v in _m["effort_mapping"].items()}
     if _m.get("beta_flags"):
         _entry["beta_flags"] = _m["beta_flags"]
@@ -180,8 +180,10 @@ def get_max_budget_level(model_id: str) -> int:
     """Get the maximum budget level for a model from config."""
     resolved_id = MODEL_ID_LOOKUP.get(model_id, model_id)
     config = MODEL_CONFIGS.get(resolved_id, DEFAULT_MODEL_CONFIG)
+    if config.get("reasoning_type") == "none":
+        return 0
     mapping = config.get("budget_mapping", config.get("effort_mapping", {}))
-    return len(mapping) if mapping else 3
+    return len(mapping) if mapping else 0
 
 
 def create_model_config(budget_level: int = 1, model_id: Optional[str] = None) -> dict:
@@ -204,7 +206,9 @@ def create_model_config(budget_level: int = 1, model_id: Optional[str] = None) -
     if budget_level > max_level:
         budget_level = max_level
 
-    is_adaptive = model_config.get("reasoning_type") == "effort"
+    reasoning_type = model_config.get("reasoning_type")
+    is_adaptive = reasoning_type == "effort"
+    supports_reasoning = reasoning_type in ("budget", "effort")
 
     base_config = {
         "max_tokens": model_config["max_tokens"],
@@ -215,6 +219,9 @@ def create_model_config(budget_level: int = 1, model_id: Optional[str] = None) -
     # Bedrock rejects temperature when thinking.type == "adaptive"
     if not is_adaptive:
         base_config["temperature"] = 0 if budget_level == 0 else 1
+
+    if not supports_reasoning:
+        return base_config
 
     if budget_level == 0:
         # Still apply beta flags (e.g. fine-grained-tool-streaming) even without thinking

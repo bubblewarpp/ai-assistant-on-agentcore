@@ -93,6 +93,33 @@ resource "aws_dynamodb_table" "skills" {
   }
 }
 
+resource "aws_dynamodb_table" "agent_profiles" {
+  billing_mode                = "PAY_PER_REQUEST"
+  hash_key                    = "user_id"
+  range_key                   = "profile_id"
+  name                        = "${local.prefix}-agent-profiles"
+  deletion_protection_enabled = var.deletion_protection_enabled
+
+  attribute {
+    name = "user_id"
+    type = "S"
+  }
+
+  attribute {
+    name = "profile_id"
+    type = "S"
+  }
+
+  point_in_time_recovery {
+    enabled = true
+  }
+
+  server_side_encryption {
+    enabled     = true
+    kms_key_arn = aws_kms_key.dynamodb.arn
+  }
+}
+
 
 # Shared KMS Customer Managed Key for DynamoDB table encryption
 resource "aws_kms_key" "dynamodb" {
@@ -120,7 +147,8 @@ resource "aws_kms_key" "dynamodb" {
             aws_iam_role.core_services_role.arn,
             aws_iam_role.kb_cleanup_pipe_role.arn,
             aws_iam_role.expiry_cleanup_role.arn,
-            aws_iam_role.task_executor_role.arn
+            aws_iam_role.task_executor_role.arn,
+            aws_iam_role.memory_consolidator_role.arn
           ]
         }
         Action = [

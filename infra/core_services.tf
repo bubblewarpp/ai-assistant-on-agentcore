@@ -79,6 +79,7 @@ resource "aws_bedrockagentcore_agent_runtime" "core_services" {
     PROJECTS_KB_ID             = aws_bedrockagent_knowledge_base.projects_kb.id,
     PROJECTS_KB_DATA_SOURCE_ID = aws_bedrockagent_data_source.projects_kb_source.data_source_id,
     PROJECT_MEMORY_ID          = aws_bedrockagentcore_memory.project_memory.id,
+    AGENT_PROFILES_TABLE       = aws_dynamodb_table.agent_profiles.id,
     CHECKPOINT_TABLE           = aws_dynamodb_table.checkpoints.id,
     CHECKPOINT_BUCKET          = local.checkpoint_bucket_name,
     CHECKPOINT_BUCKET_ENDPOINT = local.checkpoint_bucket_endpoint
@@ -257,7 +258,8 @@ resource "aws_iam_role_policy" "core_services_dynamodb_policy" {
           ]
           Resource = [
             aws_dynamodb_table.sparky_chat_history.arn,
-            "${aws_dynamodb_table.sparky_chat_history.arn}/index/*"
+            "${aws_dynamodb_table.sparky_chat_history.arn}/index/*",
+            aws_dynamodb_table.agent_profiles.arn
           ]
         }
       ],
@@ -604,6 +606,7 @@ resource "aws_iam_role_policy" "core_services_project_memory_policy" {
         Sid    = "ProjectMemoryAccess"
         Effect = "Allow"
         Action = [
+          "bedrock-agentcore:GetMemoryRecord",
           "bedrock-agentcore:ListMemoryRecords",
           "bedrock-agentcore:DeleteMemoryRecord"
         ]

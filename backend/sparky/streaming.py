@@ -207,6 +207,32 @@ class StreamingHandler:
 
                 # Extract optional tools enabled by the user (e.g. ["browser"])
                 enabled_optional_tools = list(request.input.get("enabled_tools", []))
+                profile_id = request.input.get("profile_id", "")
+                profile = None
+                profile_name = ""
+                profile_prompt = ""
+                memory_policy = "project"
+                profile_persona = "generic"
+                global_preferences = ""
+
+                if profile_id:
+                    from agent_profile_service import agent_profile_service
+
+                    profile = await agent_profile_service.get_profile(user_id, profile_id)
+                    if not profile:
+                        yield stream_error_chunk(
+                            "validation_error",
+                            "Agent profile not found.",
+                        )
+                        yield {"end": True}
+                        return
+                    profile_name = profile.get("name", "")
+                    profile_prompt = profile.get("system_prompt", "")
+                    memory_policy = profile.get("memory_policy") or "project"
+                    profile_persona = profile.get("persona") or "generic"
+                    for tool_name in profile.get("enabled_tools") or []:
+                        if tool_name not in enabled_optional_tools:
+                            enabled_optional_tools.append(tool_name)
 
                 # Validate project ownership and enable project KB tool if bound
                 project_id = request.input.get("project_id", "")
@@ -253,10 +279,17 @@ class StreamingHandler:
                 # Ensure agent exists (uses cached tools)
                 budget_level = extract_budget_level(request.input)
                 if budget_level is None:
-                    budget_level = agent_manager.current_budget_level
+                    profile_budget = profile.get("budget_level") if profile else None
+                    budget_level = (
+                        int(profile_budget)
+                        if profile_budget is not None
+                        else agent_manager.current_budget_level
+                    )
 
                 # Extract model_id from request for model selection propagation
                 model_id = request.input.get("model_id")
+                if not model_id and profile:
+                    model_id = profile.get("default_model_id")
 
                 # Validate model_id if provided
                 if model_id is not None:
@@ -270,6 +303,19 @@ class StreamingHandler:
                         )
                         yield {"end": True}
                         return
+
+                if (
+                    agent_manager.current_user_id != user_id
+                    or agent_manager.current_persona != profile_persona
+                ):
+                    await agent_manager.build_tools_with_reconciliation(
+                        user_id, profile_persona
+                    )
+
+                if memory_policy in ("global", "both"):
+                    from user_preference_loader import get_user_preferences
+
+                    global_preferences = await get_user_preferences(user_id)
 
                 # Get the appropriate agent based on mode, passing model_id for proper model selection
                 agent = await agent_manager.get_agent(
@@ -419,6 +465,7 @@ class StreamingHandler:
                         "configurable": {
                             "thread_id": session_id,
                             "actor_id": user_id,
+                            "project_id": project_id,
                         }
                     }
                     state = await agent.aget_state(config)
@@ -484,6 +531,11 @@ class StreamingHandler:
                         project_data_files=project_data_files,
                         project_canvases=project_canvases,
                         project_preferences=project_preferences,
+                        profile_id=profile_id,
+                        profile_name=profile_name,
+                        profile_prompt=profile_prompt,
+                        memory_policy=memory_policy,
+                        global_preferences=global_preferences,
                     ),
                 ):
                     # Unpack v2 StreamPart dict into mode/data for downstream processing

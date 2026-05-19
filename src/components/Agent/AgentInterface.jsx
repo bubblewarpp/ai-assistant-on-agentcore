@@ -265,7 +265,14 @@ function ChatInterfaceContent({
     const handleModelChange = () => {
       const currentModelId = localStorage.getItem("selectedModelId") || "";
       const modelConfig = sparkyModelConfig.models.find((m) => m.id === currentModelId);
-      const maxLevel = modelConfig?.reasoning_levels || 3;
+      const maxLevel = modelConfig?.reasoning_levels ?? 3;
+      if (maxLevel === 0) {
+        setBudget("0");
+        setThinkingEnabled(false);
+        localStorage.setItem(THINKING_BUDGET_KEY, "0");
+        localStorage.setItem(THINKING_ENABLED_KEY, "false");
+        return;
+      }
       if (parseInt(budget) > maxLevel) {
         const clamped = String(maxLevel);
         setBudget(clamped);
@@ -274,7 +281,7 @@ function ChatInterfaceContent({
     };
     window.addEventListener("modelChanged", handleModelChange);
     return () => window.removeEventListener("modelChanged", handleModelChange);
-  }, [budget, setBudget]);
+  }, [budget, setBudget, setThinkingEnabled]);
 
   // ── Scroll-to-message (extracted hook) ──
   const { highlightedMessageIndex, hasMessageHash, clearMessageHash } = useScrollToMessage(
@@ -303,6 +310,11 @@ function ChatInterfaceContent({
     (newBudget) => {
       setBudget(newBudget);
       localStorage.setItem(THINKING_BUDGET_KEY, newBudget);
+      if (newBudget === "0") {
+        setThinkingEnabled(false);
+        localStorage.setItem(THINKING_ENABLED_KEY, "false");
+        return;
+      }
       if (newBudget !== "0") {
         setThinkingEnabled(true);
         localStorage.setItem(THINKING_ENABLED_KEY, "true");

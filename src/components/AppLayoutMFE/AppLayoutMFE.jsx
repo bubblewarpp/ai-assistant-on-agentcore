@@ -1,8 +1,10 @@
+/* global MutationObserver */
 import React, { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { useSidebar } from "@/components/ui/sidebar";
 import Main from "../../Main";
 import ModelSelector from "../Agent/ModelSelector";
+import ProfileSelector from "../Agent/ProfileSelector";
 import "./AppLayoutMFE.css";
 
 function AppLayoutMFE({ user }) {
@@ -35,6 +37,7 @@ function AppLayoutMFE({ user }) {
     <div className="app-layout-container">
       {showHeaderModelSelector && (
         <div className="app-header">
+          <ProfileSelector compact />
           <ModelSelector />
         </div>
       )}

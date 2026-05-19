@@ -37,9 +37,9 @@ variable "sparky_models" {
   validation {
     condition = alltrue([
       for m in var.sparky_models.models :
-      m.reasoning_type == "budget" || m.reasoning_type == "effort"
+      contains(["budget", "effort", "none"], m.reasoning_type)
     ])
-    error_message = "Each model's reasoning_type must be 'budget' or 'effort'."
+    error_message = "Each model's reasoning_type must be 'budget', 'effort', or 'none'."
   }
 
 
@@ -54,6 +54,17 @@ variable "sparky_models" {
   default = {
     default_model_id = "claude-sonnet-4.6"
     models = [
+      {
+        id             = "amazon-nova-2-lite"
+        model_id       = "us.amazon.nova-2-lite-v1:0"
+        label          = "Amazon Nova 2 Lite"
+        description    = "Fast Amazon model"
+        max_tokens     = 64000
+        reasoning_type = "none"
+        budget_mapping = {}
+        effort_mapping = {}
+        beta_flags     = []
+      },
       {
         id             = "claude-opus-4.7"
         model_id       = "global.anthropic.claude-opus-4-7"

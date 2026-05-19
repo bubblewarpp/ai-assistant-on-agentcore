@@ -131,6 +131,53 @@ resource "aws_bedrockagentcore_memory_strategy" "project_preferences" {
   depends_on = [aws_iam_role_policy.project_memory_exec_policy]
 }
 
+resource "aws_bedrockagentcore_memory_strategy" "global_semantic" {
+  name                      = "GlobalUserInsightExtractor"
+  description               = "Extracts durable user-level facts and decisions across projects"
+  memory_id                 = aws_bedrockagentcore_memory.project_memory.id
+  memory_execution_role_arn = aws_iam_role.project_memory_exec_role.arn
+  type                      = "CUSTOM"
+  namespaces                = ["users/{actorId}/facts"]
+
+  configuration {
+    type = "SEMANTIC_OVERRIDE"
+
+    extraction {
+      append_to_prompt = <<-EOT
+        - Extract only durable user-level information that should apply across projects.
+        - Preserve explicit "remember" requests, durable facts, decisions, recurring constraints,
+          and long-lived working context.
+        - Ignore project-only implementation details unless the user explicitly says they
+          should be remembered globally.
+        - Never extract passwords, tokens, API keys, credentials, or sensitive personal data.
+      EOT
+      model_id         = var.project_memory_extraction_model_id
+    }
+
+    consolidation {
+      append_to_prompt = <<-EOT
+        - Merge duplicate or related user-level facts.
+        - Keep memories concise, auditable, and useful without the source conversation.
+        - Remove secrets or sensitive data if they appear in the source event.
+      EOT
+      model_id         = var.project_memory_extraction_model_id
+    }
+  }
+
+  depends_on = [aws_iam_role_policy.project_memory_exec_policy]
+}
+
+resource "aws_bedrockagentcore_memory_strategy" "global_preferences" {
+  name                      = "GlobalUserPreferenceLearner"
+  description               = "Extracts global user preferences and working style"
+  memory_id                 = aws_bedrockagentcore_memory.project_memory.id
+  memory_execution_role_arn = aws_iam_role.project_memory_exec_role.arn
+  type                      = "USER_PREFERENCE"
+  namespaces                = ["users/{actorId}/preferences"]
+
+  depends_on = [aws_iam_role_policy.project_memory_exec_policy]
+}
+
 
 #======================== Runtime Role: Data Plane Permissions ======================
 # Runtime only needs data plane access (write events + retrieve memories).

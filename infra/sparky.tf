@@ -23,6 +23,7 @@ resource "aws_bedrockagentcore_agent_runtime" "sparky" {
     PROJECTS_S3_BUCKET         = aws_s3_bucket.projects_bucket.id,
     PROJECT_MEMORY_ID          = aws_bedrockagentcore_memory.project_memory.id,
     PROJECT_CANVASES_TABLE     = aws_dynamodb_table.project_canvases.id,
+    AGENT_PROFILES_TABLE       = aws_dynamodb_table.agent_profiles.id,
     THREAD_ANCHORS_TABLE       = aws_dynamodb_table.thread_anchors.id,
     CHECKPOINT_TABLE           = aws_dynamodb_table.checkpoints.id,
     CHECKPOINT_BUCKET          = local.checkpoint_bucket_name,
@@ -208,7 +209,8 @@ resource "aws_iam_role_policy" "agent_core_policy" {
         ],
         "Resource" : [
           "${aws_dynamodb_table.sparky_chat_history.arn}",
-          "${aws_dynamodb_table.sparky_chat_history.arn}/index/*"
+          "${aws_dynamodb_table.sparky_chat_history.arn}/index/*",
+          "${aws_dynamodb_table.agent_profiles.arn}"
         ]
       },
       {

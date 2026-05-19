@@ -1,7 +1,9 @@
+/* global crypto */
 import { useState, useEffect, useRef, useContext } from "react";
 import { ChatSessionFunctionsContext, ChatSessionDataContext } from "./ChatContext";
 import { createSession as createSessionAPI } from "./context/api";
 import { getSelectedModelId } from "./ModelSelector";
+import { getSelectedProfileId } from "./ProfileSelector";
 
 /**
  * Manages session initialization lifecycle:
@@ -48,7 +50,14 @@ export function useSessionLifecycle(urlSessionId, thinkingEnabled, budget) {
       preparedSessionIdRef.current = urlSessionId;
       const currentBudget = thinkingEnabled ? budget : 0;
       functions
-        .prepareSession(urlSessionId, null, currentBudget, getSelectedModelId(), true)
+        .prepareSession(
+          urlSessionId,
+          null,
+          currentBudget,
+          getSelectedModelId(),
+          true,
+          getSelectedProfileId()
+        )
         .catch((err) => console.error("Failed to refresh tools:", err));
       return;
     }
@@ -69,7 +78,8 @@ export function useSessionLifecycle(urlSessionId, thinkingEnabled, budget) {
               null,
               thinkingEnabled ? budget : 0,
               getSelectedModelId(),
-              true
+              true,
+              getSelectedProfileId()
             );
           } catch (err) {
             console.error("Failed to refresh tools on session change:", err);

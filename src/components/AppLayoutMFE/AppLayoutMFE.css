@@ -14,6 +14,9 @@
   top: 12px;
   left: 16px;
   z-index: 10;
+  display: flex;
+  gap: 8px;
+  align-items: center;
 }
 
 /* Clickable overlay to close sidebar in overlay mode */

@@ -22,6 +22,7 @@ from canvas import ALL_CREATE_TOOLS, update_canvas
 from project_kb_tool import search_project_knowledge_base
 from project_data_tool import load_project_file
 from project_memory_tool import recall_project_memory
+from memory_tools import remember_memory, recall_user_memory
 from project_canvas_tool import load_project_canvas
 
 
@@ -42,6 +43,8 @@ CORE_TOOLS = [
     search_project_knowledge_base,
     load_project_file,
     recall_project_memory,
+    remember_memory,
+    recall_user_memory,
     load_project_canvas,
 ]
 
@@ -77,6 +80,7 @@ class AgentManager:
         self.cached_public_skills = None  # Public skills for system prompt injection
         self.current_budget_level = 0
         self.current_user_id = None
+        self.current_persona = DEFAULT_PERSONA
         self.cached_optional_tool_prefs: dict[str, bool] = {}  # tool_id → enabled
 
     async def get_agent(
@@ -233,6 +237,7 @@ class AgentManager:
 
         logger.debug(f"Loading and building tools for user: {effective_user_id}")
         self.current_user_id = effective_user_id
+        self.current_persona = persona
 
         try:
             from tool_config_service import tool_config_service
@@ -357,6 +362,7 @@ class AgentManager:
             f"Building tools with reconciliation for user: {effective_user_id}"
         )
         self.current_user_id = effective_user_id
+        self.current_persona = persona
 
         try:
             from tool_config_service import tool_config_service

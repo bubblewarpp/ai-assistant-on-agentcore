@@ -1,0 +1,39 @@
+"""Read-only agent profile access for the Sparky runtime."""
+
+from __future__ import annotations
+
+import os
+from typing import Any, Optional
+
+import boto3
+from botocore.exceptions import ClientError
+
+from utils import logger
+
+REGION = os.environ.get("REGION", "us-east-1")
+AGENT_PROFILES_TABLE = os.environ.get("AGENT_PROFILES_TABLE")
+
+
+class AgentProfileService:
+    def __init__(self, table_name: Optional[str] = None, region: Optional[str] = None):
+        self.table_name = table_name or AGENT_PROFILES_TABLE
+        self.region = region or REGION
+        self.dynamodb = boto3.resource("dynamodb", region_name=self.region)
+        self.table = self.dynamodb.Table(self.table_name) if self.table_name else None
+
+    async def get_profile(
+        self, user_id: str, profile_id: str
+    ) -> Optional[dict[str, Any]]:
+        if not self.table or not profile_id:
+            return None
+        try:
+            response = self.table.get_item(
+                Key={"user_id": user_id, "profile_id": profile_id}
+            )
+            return response.get("Item")
+        except ClientError as e:
+            logger.warning(f"Failed to load agent profile {profile_id}: {e}")
+            return None
+
+
+agent_profile_service = AgentProfileService()

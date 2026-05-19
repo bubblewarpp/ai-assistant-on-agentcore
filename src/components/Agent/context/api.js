@@ -1,3 +1,4 @@
+/* global AbortController */
 import { getAuthToken } from "./utils";
 import { SPARKY_ENDPOINT, CORE_SERVICES_ENDPOINT, CORE_SERVICES_SESSION_ID } from "./constants";
 import { createSparkySessionHeader } from "../../../utils/sessionSeed";
@@ -330,7 +331,8 @@ export const prepareSession = async (
   diagramPath = null,
   thinking = 0,
   modelId = null,
-  refreshTools = false
+  refreshTools = false,
+  profileId = null
 ) => {
   const token = await getAuthToken();
 
@@ -347,6 +349,10 @@ export const prepareSession = async (
 
   if (modelId) {
     requestBody.input.model_id = modelId;
+  }
+
+  if (profileId) {
+    requestBody.input.profile_id = profileId;
   }
 
   // Include refresh flag to trigger preference reconciliation
@@ -501,6 +507,9 @@ export const sendMessageAPI = async (
       }
       if (config.budget_level !== undefined && config.budget_level !== null) {
         requestBody.input.budget_level = config.budget_level;
+      }
+      if (config.profile_id) {
+        requestBody.input.profile_id = config.profile_id;
       }
     }
   }

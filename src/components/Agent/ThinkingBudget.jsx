@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { Switch } from "@/components/ui/switch";
 import { useTheme } from "../ThemeContext";
 import { sparkyModelConfig } from "../../config";
@@ -16,7 +16,7 @@ const ThinkingBudget = React.memo(({ initialBudget, onBudgetChange }) => {
 
   const selectedModelConfig = sparkyModelConfig.models.find((m) => m.id === selectedModelId);
   const levelLabels = selectedModelConfig?.reasoning_labels || DEFAULT_LABELS;
-  const maxLevels = selectedModelConfig?.reasoning_levels || 3;
+  const maxLevels = selectedModelConfig?.reasoning_levels ?? 3;
 
   // Sync from parent when initialBudget prop changes
   useEffect(() => {
@@ -34,6 +34,10 @@ const ThinkingBudget = React.memo(({ initialBudget, onBudgetChange }) => {
 
   // Clamp budget when model changes to one with fewer levels
   useEffect(() => {
+    if (maxLevels === 0 && localBudget !== "0") {
+      setLocalBudget("0");
+      return;
+    }
     if (localBudget && parseInt(localBudget) > maxLevels) {
       setLocalBudget(String(maxLevels));
     }
@@ -75,6 +79,14 @@ const ThinkingBudget = React.memo(({ initialBudget, onBudgetChange }) => {
     flex: 1,
   };
 
+  if (maxLevels === 0) {
+    return (
+      <div style={{ padding: "12px", minWidth: "200px", fontSize: "13px" }}>
+        Reasoning is not available for this model.
+      </div>
+    );
+  }
+
   return (
     <div style={{ padding: "4px", minWidth: "200px" }}>
       <div
@@ -112,5 +124,7 @@ const ThinkingBudget = React.memo(({ initialBudget, onBudgetChange }) => {
     </div>
   );
 });
+
+ThinkingBudget.displayName = "ThinkingBudget";
 
 export default ThinkingBudget;

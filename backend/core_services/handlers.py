@@ -23,6 +23,7 @@ from chat_history_service import chat_history_service
 from tool_config_service import tool_config_service
 from kb_search_service import get_kb_search_service
 from skills_service import skills_service
+from agent_profile_service import agent_profile_service
 from session_validator import validate_session_id, validate_session_ownership
 from project_service import project_service
 from project_file_manager import project_file_manager
@@ -2772,6 +2773,199 @@ class RequestHandlers:
         except Exception as e:
             logger.error(f"Failed to delete memory record {memory_record_id}: {e}")
             return error_envelope("internal_error", "Failed to delete memory record")
+
+    @staticmethod
+    async def handle_list_user_memories(user_id: str) -> JSONResponse:
+        from config import project_memory_store
+
+        try:
+            if not project_memory_store:
+                return JSONResponse(
+                    {"type": "user_memories_list", "facts": [], "preferences": []},
+                    headers=CORS_HEADERS,
+                )
+
+            memory_id = project_memory_store.memory_id
+            client = project_memory_store.client
+
+            async def _list_all(namespace: str) -> list[dict]:
+                records = []
+                next_token = None
+                try:
+                    while True:
+                        kwargs = {
+                            "memoryId": memory_id,
+                            "namespace": namespace,
+                            "maxResults": 100,
+                        }
+                        if next_token:
+                            kwargs["nextToken"] = next_token
+                        resp = await asyncio.to_thread(client.list_memory_records, **kwargs)
+                        for r in resp.get("memoryRecordSummaries", []):
+                            content = r.get("content", {})
+                            text = (
+                                content.get("text", "")
+                                if isinstance(content, dict)
+                                else str(content)
+                            )
+                            if text:
+                                records.append(
+                                    {
+                                        "memory_record_id": r.get("memoryRecordId"),
+                                        "content": text,
+                                    }
+                                )
+                        next_token = resp.get("nextToken")
+                        if not next_token:
+                            break
+                except Exception as e:
+                    logger.warning(f"User memory list failed for {namespace}: {e}")
+                return records
+
+            facts, preferences = await asyncio.gather(
+                _list_all(f"users/{user_id}/facts"),
+                _list_all(f"users/{user_id}/preferences"),
+            )
+
+            return JSONResponse(
+                {
+                    "type": "user_memories_list",
+                    "facts": facts,
+                    "preferences": preferences,
+                },
+                headers=CORS_HEADERS,
+            )
+        except Exception as e:
+            logger.error(f"Failed to list user memories: {e}")
+            return error_envelope("internal_error", "Failed to list user memories")
+
+    @staticmethod
+    async def handle_delete_user_memory(
+        user_id: str, memory_record_id: str
+    ) -> JSONResponse:
+        from config import project_memory_store
+
+        try:
+            if not memory_record_id:
+                return error_envelope(
+                    "validation_error", "memory_record_id is required"
+                )
+            if not project_memory_store:
+                return error_envelope("not_found", "Memory store not configured")
+
+            memory_id = project_memory_store.memory_id
+            client = project_memory_store.client
+            valid_namespaces = {
+                f"users/{user_id}/facts",
+                f"users/{user_id}/preferences",
+            }
+            try:
+                record = await asyncio.to_thread(
+                    client.get_memory_record,
+                    memoryId=memory_id,
+                    memoryRecordId=memory_record_id,
+                )
+                if record.get("namespace", "") not in valid_namespaces:
+                    return error_envelope("access_denied", "Access denied")
+            except client.exceptions.ResourceNotFoundException:
+                return error_envelope("not_found", "Memory record not found")
+
+            await asyncio.to_thread(
+                client.delete_memory_record,
+                memoryId=memory_id,
+                memoryRecordId=memory_record_id,
+            )
+
+            return JSONResponse(
+                {
+                    "type": "user_memory_deleted",
+                    "memory_record_id": memory_record_id,
+                },
+                headers=CORS_HEADERS,
+            )
+        except Exception as e:
+            logger.error(f"Failed to delete user memory record {memory_record_id}: {e}")
+            return error_envelope("internal_error", "Failed to delete memory record")
+
+    @staticmethod
+    async def handle_list_agent_profiles(user_id: str) -> JSONResponse:
+        try:
+            profiles = await agent_profile_service.list_profiles(user_id)
+            return JSONResponse(
+                {"type": "agent_profiles_list", "profiles": profiles},
+                headers=CORS_HEADERS,
+            )
+        except Exception as e:
+            logger.error(f"Failed to list agent profiles: {e}")
+            return error_envelope("internal_error", "Failed to list agent profiles")
+
+    @staticmethod
+    async def handle_get_agent_profile(user_id: str, profile_id: str) -> JSONResponse:
+        try:
+            profile = await agent_profile_service.get_profile(user_id, profile_id)
+            if not profile:
+                return error_envelope("not_found", "Agent profile not found")
+            return JSONResponse(
+                {"type": "agent_profile", "profile": profile},
+                headers=CORS_HEADERS,
+            )
+        except Exception as e:
+            logger.error(f"Failed to get agent profile {profile_id}: {e}")
+            return error_envelope("internal_error", "Failed to get agent profile")
+
+    @staticmethod
+    async def handle_create_agent_profile(
+        user_id: str, profile: dict[str, Any]
+    ) -> JSONResponse:
+        try:
+            created = await agent_profile_service.create_profile(user_id, profile or {})
+            return JSONResponse(
+                {"type": "agent_profile_created", "profile": created},
+                headers=CORS_HEADERS,
+            )
+        except ValueError as e:
+            return error_envelope("validation_error", str(e))
+        except Exception as e:
+            logger.error(f"Failed to create agent profile: {e}")
+            return error_envelope("internal_error", "Failed to create agent profile")
+
+    @staticmethod
+    async def handle_update_agent_profile(
+        user_id: str, profile_id: str, profile: dict[str, Any]
+    ) -> JSONResponse:
+        try:
+            if not profile_id:
+                return error_envelope("validation_error", "profile_id is required")
+            updated = await agent_profile_service.update_profile(
+                user_id, profile_id, profile or {}
+            )
+            if not updated:
+                return error_envelope("not_found", "Agent profile not found")
+            return JSONResponse(
+                {"type": "agent_profile_updated", "profile": updated},
+                headers=CORS_HEADERS,
+            )
+        except ValueError as e:
+            return error_envelope("validation_error", str(e))
+        except Exception as e:
+            logger.error(f"Failed to update agent profile {profile_id}: {e}")
+            return error_envelope("internal_error", "Failed to update agent profile")
+
+    @staticmethod
+    async def handle_delete_agent_profile(user_id: str, profile_id: str) -> JSONResponse:
+        try:
+            if not profile_id:
+                return error_envelope("validation_error", "profile_id is required")
+            deleted = await agent_profile_service.delete_profile(user_id, profile_id)
+            if not deleted:
+                return error_envelope("not_found", "Agent profile not found")
+            return JSONResponse(
+                {"type": "agent_profile_deleted", "profile_id": profile_id},
+                headers=CORS_HEADERS,
+            )
+        except Exception as e:
+            logger.error(f"Failed to delete agent profile {profile_id}: {e}")
+            return error_envelope("internal_error", "Failed to delete agent profile")
 
     @staticmethod
     async def handle_create_scheduled_task(

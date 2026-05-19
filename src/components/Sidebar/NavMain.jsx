@@ -18,6 +18,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { sparkyModelConfig } from "@/config";
+import ProfileSelector from "@/components/Agent/ProfileSelector";
 
 const MODEL_OPTIONS = sparkyModelConfig.models;
 const DEFAULT_MODEL_ID = sparkyModelConfig.defaultModelId;
@@ -124,6 +125,13 @@ export function NavMain({ items, onNewChat, onSearchClick, showModelSelector }) 
               </SidebarMenuItem>
             );
           })}
+          {showModelSelector && (
+            <SidebarMenuItem>
+              <div className="px-2 py-1">
+                <ProfileSelector compact />
+              </div>
+            </SidebarMenuItem>
+          )}
           {showModelSelector && (
             <SidebarMenuItem>
               <DropdownMenu>

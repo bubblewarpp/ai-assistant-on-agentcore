@@ -96,6 +96,11 @@ class SparkyContext:
     project_data_files: List[str] = field(default_factory=list)
     project_canvases: List[dict] = field(default_factory=list)
     project_preferences: str = ""
+    profile_id: str = ""
+    profile_name: str = ""
+    profile_prompt: str = ""
+    memory_policy: str = "project"
+    global_preferences: str = ""
     # Thread (side-conversation) mode — when True, skip canvas guidance, skip
     # project-memory ingestion, skip KB indexing. Thread state lives under a
     # distinct checkpoint_ns.
@@ -425,6 +430,54 @@ def create_react_agent(
                         content=system_message.content + BROWSER_GUIDANCE
                     )
 
+            # Inject selected agent profile instructions.
+            if ctx.profile_prompt and system_message is not None:
+                profile_title = ctx.profile_name or "Selected profile"
+                profile_guidance = (
+                    f"\n\n[Agent Profile - {profile_title}]\n"
+                    f"{ctx.profile_prompt}\n"
+                )
+                profile_block = {"type": "text", "text": profile_guidance}
+                if isinstance(system_message.content, list):
+                    system_message = SystemMessage(
+                        content=[*system_message.content, profile_block]
+                    )
+                elif isinstance(system_message.content, str):
+                    system_message = SystemMessage(
+                        content=system_message.content + profile_guidance
+                    )
+
+            if ctx.global_preferences and system_message is not None:
+                global_pref_text = (
+                    "\n\n[Your global preferences]\n" + ctx.global_preferences
+                )
+                global_pref_block = {"type": "text", "text": global_pref_text}
+                if isinstance(system_message.content, list):
+                    system_message = SystemMessage(
+                        content=[*system_message.content, global_pref_block]
+                    )
+                elif isinstance(system_message.content, str):
+                    system_message = SystemMessage(
+                        content=system_message.content + global_pref_text
+                    )
+
+            if ctx.memory_policy in ("global", "both") and system_message is not None:
+                memory_guidance = (
+                    "\nUse `recall_user_memory` when the user's request may benefit "
+                    "from durable preferences or facts remembered across projects. "
+                    "Use `remember_memory` when the user explicitly asks you to remember "
+                    "something for later.\n"
+                )
+                memory_block = {"type": "text", "text": memory_guidance}
+                if isinstance(system_message.content, list):
+                    system_message = SystemMessage(
+                        content=[*system_message.content, memory_block]
+                    )
+                elif isinstance(system_message.content, str):
+                    system_message = SystemMessage(
+                        content=system_message.content + memory_guidance
+                    )
+
             # Inject user preferences when project is bound and preferences exist
             if ctx.project_preferences and system_message is not None:
                 pref_block = {
@@ -514,7 +567,14 @@ def create_react_agent(
             # not pollute project long-term memory.
             from config import memory_store as _memory_store
 
-            if _memory_store and ctx.project_id and ctx.user_id and not ctx.thread_mode:
+            should_store_project_memory = ctx.memory_policy in ("project", "both")
+            if (
+                _memory_store
+                and ctx.project_id
+                and ctx.user_id
+                and should_store_project_memory
+                and not ctx.thread_mode
+            ):
                 last_human_msg = (
                     filtered_messages[-1]
                     if filtered_messages
@@ -577,15 +637,31 @@ def create_react_agent(
                 "load_project_file",
                 "recall_project_memory",
                 "load_project_canvas",
+                "remember_memory",
+                "recall_user_memory",
             ):
                 tool_ctx = (
                     request.runtime.context
                     if request.runtime and request.runtime.context
                     else SparkyContext()
                 )
-                modified_args["project_id"] = tool_ctx.project_id or ""
-                if tool_name in ("load_project_file", "recall_project_memory"):
+                if tool_name in (
+                    "search_project_knowledge_base",
+                    "load_project_file",
+                    "recall_project_memory",
+                    "load_project_canvas",
+                    "remember_memory",
+                ):
+                    modified_args["project_id"] = tool_ctx.project_id or ""
+                if tool_name in (
+                    "load_project_file",
+                    "recall_project_memory",
+                    "remember_memory",
+                    "recall_user_memory",
+                ):
                     modified_args["user_id"] = tool_ctx.user_id or ""
+                if tool_name == "remember_memory":
+                    modified_args["session_id"] = tool_ctx.session_id or ""
 
             request.tool_call = {**request.tool_call, "args": modified_args}
 

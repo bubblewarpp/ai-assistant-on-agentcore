@@ -76,6 +76,14 @@ CORE_SERVICES_REQUEST_TYPES = {
     # Project memory
     "list_project_memories",
     "delete_project_memory",
+    "list_user_memories",
+    "delete_user_memory",
+    # Agent profiles
+    "list_agent_profiles",
+    "get_agent_profile",
+    "create_agent_profile",
+    "update_agent_profile",
+    "delete_agent_profile",
     # Scheduled tasks management
     "create_scheduled_task",
     "list_scheduled_tasks",
@@ -473,6 +481,44 @@ async def invoke(request: InvocationRequest, http_request: Request):
             user_id=user_id,
             project_id=request.input.get("project_id", ""),
             memory_record_id=request.input.get("memory_record_id", ""),
+        )
+
+    if request_type == "list_user_memories":
+        return await handlers.handle_list_user_memories(user_id=user_id)
+
+    if request_type == "delete_user_memory":
+        return await handlers.handle_delete_user_memory(
+            user_id=user_id,
+            memory_record_id=request.input.get("memory_record_id", ""),
+        )
+
+    # Agent Profile handlers
+    if request_type == "list_agent_profiles":
+        return await handlers.handle_list_agent_profiles(user_id=user_id)
+
+    if request_type == "get_agent_profile":
+        return await handlers.handle_get_agent_profile(
+            user_id=user_id,
+            profile_id=request.input.get("profile_id", ""),
+        )
+
+    if request_type == "create_agent_profile":
+        return await handlers.handle_create_agent_profile(
+            user_id=user_id,
+            profile=request.input.get("profile", {}),
+        )
+
+    if request_type == "update_agent_profile":
+        return await handlers.handle_update_agent_profile(
+            user_id=user_id,
+            profile_id=request.input.get("profile_id", ""),
+            profile=request.input.get("profile", {}),
+        )
+
+    if request_type == "delete_agent_profile":
+        return await handlers.handle_delete_agent_profile(
+            user_id=user_id,
+            profile_id=request.input.get("profile_id", ""),
         )
 
     # Scheduled Tasks handlers
