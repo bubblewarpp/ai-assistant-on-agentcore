@@ -52,13 +52,24 @@ variable "sparky_models" {
   }
 
   default = {
-    default_model_id = "claude-sonnet-4.6"
+    default_model_id = "claude-haiku-4.5"
     models = [
+      {
+        id             = "claude-haiku-4.5"
+        model_id       = "global.anthropic.claude-haiku-4-5-20251001-v1:0"
+        label          = "Claude Haiku 4.5"
+        description    = "Default balanced model"
+        max_tokens     = 64000
+        reasoning_type = "budget"
+        budget_mapping = { "1" = 16000, "2" = 30000, "3" = 42000, "4" = 63999 }
+        effort_mapping = {}
+        beta_flags     = ["interleaved-thinking-2025-05-14", "fine-grained-tool-streaming-2025-05-14"]
+      },
       {
         id             = "amazon-nova-2-lite"
         model_id       = "us.amazon.nova-2-lite-v1:0"
         label          = "Amazon Nova 2 Lite"
-        description    = "Fast Amazon model"
+        description    = "Low-cost Amazon model"
         max_tokens     = 64000
         reasoning_type = "none"
         budget_mapping = {}
@@ -66,48 +77,37 @@ variable "sparky_models" {
         beta_flags     = []
       },
       {
-        id             = "claude-opus-4.7"
-        model_id       = "global.anthropic.claude-opus-4-7"
-        label          = "Claude Opus 4.7"
-        description    = "Best model"
-        max_tokens     = 128000
-        reasoning_type = "effort"
+        id             = "kimi-k2.5"
+        model_id       = "moonshotai.kimi-k2.5"
+        label          = "Kimi K2.5"
+        description    = "Balanced low-cost model"
+        max_tokens     = 16000
+        reasoning_type = "none"
         budget_mapping = {}
-        effort_mapping = { "1" = "low", "2" = "medium", "3" = "high", "4" = "xhigh", "5" = "max" }
-        beta_flags     = ["fine-grained-tool-streaming-2025-05-14"]
-      },
-      {
-        id             = "claude-sonnet-4.6"
-        model_id       = "global.anthropic.claude-sonnet-4-6"
-        label          = "Claude Sonnet 4.6"
-        description    = "Best model"
-        max_tokens     = 64000
-        reasoning_type = "effort"
-        budget_mapping = {}
-        effort_mapping = { "1" = "low", "2" = "medium", "3" = "high", "4" = "max" }
-        beta_flags     = ["context-1m-2025-08-07", "fine-grained-tool-streaming-2025-05-14"]
-      },
-      {
-        id             = "claude-opus-4.6"
-        model_id       = "global.anthropic.claude-opus-4-6-v1"
-        label          = "Claude Opus 4.6"
-        description    = "Best previous model"
-        max_tokens     = 128000
-        reasoning_type = "effort"
-        budget_mapping = {}
-        effort_mapping = { "1" = "low", "2" = "medium", "3" = "high", "4" = "max" }
-        beta_flags     = ["context-1m-2025-08-07", "fine-grained-tool-streaming-2025-05-14"]
-      },
-      {
-        id             = "claude-haiku-4.5"
-        model_id       = "global.anthropic.claude-haiku-4-5-20251001-v1:0"
-        label          = "Claude Haiku 4.5"
-        description    = "Fastest"
-        max_tokens     = 64000
-        reasoning_type = "budget"
-        budget_mapping = { "1" = 16000, "2" = 30000, "3" = 42000, "4" = 63999 }
         effort_mapping = {}
-        beta_flags     = ["interleaved-thinking-2025-05-14", "fine-grained-tool-streaming-2025-05-14"]
+        beta_flags     = []
+      },
+      {
+        id             = "mistral-large-3"
+        model_id       = "mistral.mistral-large-3-675b-instruct"
+        label          = "Mistral Large 3"
+        description    = "Balanced low-cost model"
+        max_tokens     = 32000
+        reasoning_type = "none"
+        budget_mapping = {}
+        effort_mapping = {}
+        beta_flags     = []
+      },
+      {
+        id             = "deepseek-v3.2"
+        model_id       = "deepseek.v3.2"
+        label          = "DeepSeek V3.2"
+        description    = "Low-cost reasoning and coding model"
+        max_tokens     = 8000
+        reasoning_type = "none"
+        budget_mapping = {}
+        effort_mapping = {}
+        beta_flags     = []
       }
     ]
   }
