@@ -9,9 +9,24 @@ import boto3
 from botocore.exceptions import ClientError
 
 from utils import logger
+from decimal import Decimal
 
 REGION = os.environ.get("REGION", "us-east-1")
 AGENT_PROFILES_TABLE = os.environ.get("AGENT_PROFILES_TABLE")
+
+
+
+def _json_safe(value):
+    """Convert DynamoDB Decimal values into JSON-safe Python primitives."""
+    if isinstance(value, Decimal):
+        if value % 1 == 0:
+            return int(value)
+        return float(value)
+    if isinstance(value, list):
+        return [_json_safe(item) for item in value]
+    if isinstance(value, dict):
+        return {key: _json_safe(val) for key, val in value.items()}
+    return value
 
 
 class AgentProfileService:
@@ -30,7 +45,7 @@ class AgentProfileService:
             response = self.table.get_item(
                 Key={"user_id": user_id, "profile_id": profile_id}
             )
-            return response.get("Item")
+            return _json_safe(response.get("Item"))
         except ClientError as e:
             logger.warning(f"Failed to load agent profile {profile_id}: {e}")
             return None

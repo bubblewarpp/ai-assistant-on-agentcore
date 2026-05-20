@@ -1,3 +1,16 @@
+
+def _json_safe(value):
+    """Convert DynamoDB Decimal values into JSON-safe Python primitives."""
+    if isinstance(value, Decimal):
+        if value % 1 == 0:
+            return int(value)
+        return float(value)
+    if isinstance(value, list):
+        return [_json_safe(item) for item in value]
+    if isinstance(value, dict):
+        return {key: _json_safe(val) for key, val in value.items()}
+    return value
+
 """
 Request Handlers for Core-Services.
 
@@ -28,6 +41,7 @@ from session_validator import validate_session_id, validate_session_ownership
 from project_service import project_service
 from project_file_manager import project_file_manager
 from project_kb_service import project_kb_service
+from decimal import Decimal
 
 
 def _composite_actor_id(user_id: str, project_id: str) -> str:
@@ -2892,9 +2906,9 @@ class RequestHandlers:
         try:
             profiles = await agent_profile_service.list_profiles(user_id)
             return JSONResponse(
-                {"type": "agent_profiles_list", "profiles": profiles},
-                headers=CORS_HEADERS,
-            )
+            _json_safe({"type": "agent_profiles_list", "profiles": profiles}),
+            headers=CORS_HEADERS,
+        )
         except Exception as e:
             logger.error(f"Failed to list agent profiles: {e}")
             return error_envelope("internal_error", "Failed to list agent profiles")
@@ -2906,9 +2920,9 @@ class RequestHandlers:
             if not profile:
                 return error_envelope("not_found", "Agent profile not found")
             return JSONResponse(
-                {"type": "agent_profile", "profile": profile},
-                headers=CORS_HEADERS,
-            )
+            _json_safe({"type": "agent_profile", "profile": profile}),
+            headers=CORS_HEADERS,
+        )
         except Exception as e:
             logger.error(f"Failed to get agent profile {profile_id}: {e}")
             return error_envelope("internal_error", "Failed to get agent profile")

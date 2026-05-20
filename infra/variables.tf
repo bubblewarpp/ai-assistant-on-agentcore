@@ -18,98 +18,73 @@ variable "region" {
 }
 
 variable "sparky_models" {
-  description = "Centralized Sparky AI assistant model configuration. Single source of truth for backend and frontend."
+  description = "Available Sparky model configuration."
   type = object({
     default_model_id = string
     models = list(object({
-      id             = string
-      model_id       = string
-      label          = string
-      description    = string
-      max_tokens     = number
-      reasoning_type = string
-      budget_mapping = optional(map(number), {})
-      effort_mapping = optional(map(string), {})
-      beta_flags     = optional(list(string), [])
+      id               = string
+      label            = string
+      description      = string
+      model_id         = string
+      max_tokens       = number
+      reasoning_type   = string
+      reasoning_levels = list(string)
+      reasoning_labels = list(string)
+      budget_mapping   = map(number)
+      effort_mapping   = map(string)
     }))
   })
 
-  validation {
-    condition = alltrue([
-      for m in var.sparky_models.models :
-      contains(["budget", "effort", "none"], m.reasoning_type)
-    ])
-    error_message = "Each model's reasoning_type must be 'budget', 'effort', or 'none'."
-  }
-
-
-  validation {
-    condition = contains(
-      [for m in var.sparky_models.models : m.id],
-      var.sparky_models.default_model_id
-    )
-    error_message = "default_model_id must reference one of the defined model IDs."
-  }
-
   default = {
-    default_model_id = "claude-haiku-4.5"
+    default_model_id = "amazon-nova-lite"
     models = [
       {
-        id             = "claude-haiku-4.5"
-        model_id       = "global.anthropic.claude-haiku-4-5-20251001-v1:0"
-        label          = "Claude Haiku 4.5"
-        description    = "Default balanced model"
-        max_tokens     = 64000
-        reasoning_type = "budget"
-        budget_mapping = { "1" = 16000, "2" = 30000, "3" = 42000, "4" = 63999 }
-        effort_mapping = {}
-        beta_flags     = ["interleaved-thinking-2025-05-14", "fine-grained-tool-streaming-2025-05-14"]
+        id               = "amazon-nova-lite"
+        label            = "Amazon Nova Lite"
+        description      = "Default low-cost Amazon Nova model"
+        model_id         = "apac.amazon.nova-lite-v1:0"
+        max_tokens       = 8000
+        reasoning_type   = "none"
+        reasoning_levels = []
+        reasoning_labels = []
+        budget_mapping   = {}
+        effort_mapping   = {}
       },
       {
-        id             = "amazon-nova-2-lite"
-        model_id       = "us.amazon.nova-2-lite-v1:0"
-        label          = "Amazon Nova 2 Lite"
-        description    = "Low-cost Amazon model"
-        max_tokens     = 64000
-        reasoning_type = "none"
-        budget_mapping = {}
-        effort_mapping = {}
-        beta_flags     = []
+        id               = "amazon-nova-pro"
+        label            = "Amazon Nova Pro"
+        description      = "Stronger Amazon Nova model"
+        model_id         = "apac.amazon.nova-pro-v1:0"
+        max_tokens       = 8000
+        reasoning_type   = "none"
+        reasoning_levels = []
+        reasoning_labels = []
+        budget_mapping   = {}
+        effort_mapping   = {}
       },
       {
-        id             = "kimi-k2.5"
-        model_id       = "moonshotai.kimi-k2.5"
-        label          = "Kimi K2.5"
-        description    = "Balanced low-cost model"
-        max_tokens     = 16000
-        reasoning_type = "none"
-        budget_mapping = {}
+        id               = "claude-haiku-4.5"
+        label            = "Claude Haiku 4.5"
+        description      = "Optional Claude fallback model"
+        model_id         = "global.anthropic.claude-haiku-4-5-20251001-v1:0"
+        max_tokens       = 64000
+        reasoning_type   = "budget"
+        reasoning_levels = ["Low", "Medium", "High", "Max"]
+        reasoning_labels = []
+        budget_mapping = {
+          "1" = 16000
+          "2" = 30000
+          "3" = 42000
+          "4" = 63999
+        }
         effort_mapping = {}
-        beta_flags     = []
-      },
-      {
-        id             = "mistral-large-3"
-        model_id       = "mistral.mistral-large-3-675b-instruct"
-        label          = "Mistral Large 3"
-        description    = "Balanced low-cost model"
-        max_tokens     = 32000
-        reasoning_type = "none"
-        budget_mapping = {}
-        effort_mapping = {}
-        beta_flags     = []
-      },
-      {
-        id             = "deepseek-v3.2"
-        model_id       = "deepseek.v3.2"
-        label          = "DeepSeek V3.2"
-        description    = "Low-cost reasoning and coding model"
-        max_tokens     = 8000
-        reasoning_type = "none"
-        budget_mapping = {}
-        effort_mapping = {}
-        beta_flags     = []
       }
     ]
+  }
+
+  validation {
+    condition     = contains([for model in var.sparky_models.models : model.id], var.sparky_models.default_model_id)
+    error_message = "default_model_id must reference one of the defined model IDs."
   }
 }
 

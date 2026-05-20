@@ -16,6 +16,21 @@ from botocore.exceptions import ClientError
 
 from config import AGENT_PROFILES_TABLE, REGION
 from utils import logger
+from decimal import Decimal
+
+def _json_safe(value):
+    """Convert DynamoDB Decimal values into JSON-safe Python primitives."""
+    if isinstance(value, Decimal):
+        if value % 1 == 0:
+            return int(value)
+        return float(value)
+    if isinstance(value, list):
+        return [_json_safe(item) for item in value]
+    if isinstance(value, dict):
+        return {key: _json_safe(val) for key, val in value.items()}
+    return value
+
+
 
 
 DEFAULT_MEMORY_POLICY = "project"
