@@ -9,7 +9,7 @@ variable "deletion_protection_enabled" {
 }
 variable "region" {
   type    = string
-  default = "us-east-1"
+  default = "ap-southeast-1"
 
   validation {
     condition     = can(regex("^(us|eu|ap|sa|ca|me|af|il)-(east|west|north|south|central|northeast|southeast|northwest|southwest)-[1-9]$", var.region))
