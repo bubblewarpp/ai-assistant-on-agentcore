@@ -167,17 +167,6 @@ resource "aws_bedrockagentcore_memory_strategy" "global_semantic" {
   depends_on = [aws_iam_role_policy.project_memory_exec_policy]
 }
 
-resource "aws_bedrockagentcore_memory_strategy" "global_preferences" {
-  name                      = "GlobalUserPreferenceLearner"
-  description               = "Extracts global user preferences and working style"
-  memory_id                 = aws_bedrockagentcore_memory.project_memory.id
-  memory_execution_role_arn = aws_iam_role.project_memory_exec_role.arn
-  type                      = "USER_PREFERENCE"
-  namespaces                = ["users/{actorId}/preferences"]
-
-  depends_on = [aws_iam_role_policy.project_memory_exec_policy]
-}
-
 
 #======================== Runtime Role: Data Plane Permissions ======================
 # Runtime only needs data plane access (write events + retrieve memories).
