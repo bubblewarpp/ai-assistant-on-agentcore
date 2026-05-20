@@ -26,12 +26,18 @@ const emptyProfile = {
 export default function ProfilesPage() {
   const [profiles, setProfiles] = useState([]);
   const [selectedId, setSelectedId] = useState("");
+  const [isCreating, setIsCreating] = useState(false);
   const [draft, setDraft] = useState(emptyProfile);
   const [memories, setMemories] = useState({ facts: [], preferences: [] });
   const [loading, setLoading] = useState(true);
 
   const selectedProfile = useMemo(
-    () => profiles.find((profile) => profile.profile_id === selectedId),
+    () => {
+      if (!selectedId || selectedId === "__new__") {
+        return null;
+      }
+      return profiles.find((profile) => profile.profile_id === selectedId) || null;
+    },
     [profiles, selectedId]
   );
 
@@ -48,30 +54,43 @@ export default function ProfilesPage() {
         facts: memoriesData.facts || [],
         preferences: memoriesData.preferences || [],
       });
-      if (!selectedId && list.length > 0) {
+      if (!isCreating && !selectedId && list.length > 0) {
         setSelectedId(list[0].profile_id);
-        setDraft({ ...emptyProfile, ...list[0] });
       }
     } catch (error) {
       toast.error(error.message || "Failed to load profiles");
     } finally {
       setLoading(false);
     }
-  }, [selectedId]);
+  }, [selectedId, isCreating]);
 
   useEffect(() => {
     load();
   }, [load]);
 
   useEffect(() => {
+    if (isCreating || selectedId === "__new__") {
+      return;
+    }
+
     if (selectedProfile) {
       setDraft({ ...emptyProfile, ...selectedProfile });
     }
-  }, [selectedProfile]);
+  }, [selectedProfile, selectedId, isCreating]);
 
   const startNew = () => {
-    setSelectedId("");
-    setDraft(emptyProfile);
+    setSelectedId("__new__");
+    setIsCreating(true);
+    setDraft({
+      ...emptyProfile,
+      name: "",
+      system_prompt: "",
+      default_model_id: "amazon-nova-lite",
+      budget_level: 1,
+      memory_policy: "both",
+      persona: "generic",
+      enabled_tools: [],
+    });
   };
 
   const saveProfile = async () => {
@@ -80,11 +99,12 @@ export default function ProfilesPage() {
         ...draft,
         budget_level: Number(draft.budget_level),
       };
-      const data = selectedId
+      const data = !isCreating && selectedId && selectedId !== "__new__"
         ? await updateAgentProfile(selectedId, payload)
         : await createAgentProfile(payload);
       const saved = data.profile;
       setSelectedId(saved.profile_id);
+      setIsCreating(false);
       await load();
       window.dispatchEvent(new CustomEvent("agentProfilesChanged"));
       toast.success("Profile saved");
@@ -139,7 +159,7 @@ export default function ProfilesPage() {
             <button
               key={profile.profile_id}
               className={`profiles-list-item ${selectedId === profile.profile_id ? "active" : ""}`}
-              onClick={() => setSelectedId(profile.profile_id)}
+              onClick={() => { setSelectedId(profile.profile_id); setIsCreating(false); }}
             >
               <Bot className="size-4" />
               <span>{profile.name}</span>
@@ -154,9 +174,9 @@ export default function ProfilesPage() {
       <main className="profiles-editor">
         <section className="profiles-section">
           <div className="profiles-section-header">
-            <h2>{selectedId ? "Edit Profile" : "New Profile"}</h2>
+            <h2>{!isCreating && selectedId ? "Edit Profile" : "New Profile"}</h2>
             <div className="profiles-actions">
-              {selectedId && (
+              {!isCreating && selectedId && selectedId !== "__new__" && (
                 <Button variant="outline" onClick={removeProfile}>
                   <Trash2 className="size-4" />
                   Delete
