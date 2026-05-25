@@ -449,17 +449,42 @@ class AgentManager:
                 except Exception as e:
                     logger.error(f"Failed to create local tool {tool_id}: {e}")
 
-            # --- Reconcile MCP tools via lifecycle manager (Req 4.2, 4.6) ---
+            # --- Load only safe/public MCP tools globally ---
+            # Public MCP tools can be used by all users.
+            # Restricted MCP tools, such as Cost Optimization, must be handled on-demand.
             try:
                 runtime_tools = mcp_lifecycle_manager.get_runtime_tool_set()
-                mcp_tools = await mcp_lifecycle_manager.reconcile(config, runtime_tools)
-                enabled_tools.extend(mcp_tools)
-                logger.debug(
-                    f"Reconciliation added {len(mcp_tools)} MCP tools to Active_Tool_Set"
+                all_mcp_tools = await mcp_lifecycle_manager.reconcile(config, runtime_tools)
+
+                restricted_keywords = [
+                    "cost",
+                    "billing",
+                    "optimization",
+                    "cost_optimization",
+                    "cost-optimize",
+                    "cost-explorer",
+                ]
+
+                public_mcp_tools = []
+                for tool in all_mcp_tools:
+                    tool_name = getattr(tool, "name", "") or getattr(tool, "__name__", "")
+                    tool_name_lower = tool_name.lower()
+
+                    if any(keyword in tool_name_lower for keyword in restricted_keywords):
+                        logger.info(f"Skipping restricted MCP tool from global session: {tool_name}")
+                        continue
+
+                    public_mcp_tools.append(tool)
+
+                enabled_tools.extend(public_mcp_tools)
+
+                logger.info(
+                    f"Loaded {len(public_mcp_tools)} public MCP tools globally; "
+                    f"skipped {len(all_mcp_tools) - len(public_mcp_tools)} restricted MCP tools."
                 )
+
             except Exception as e:
-                logger.error(f"MCP reconciliation failed: {e}")
-                # Continue without MCP tools — local tools still work
+                logger.error(f"Public MCP loading failed: {e}")
 
             # Cache the Active_Tool_Set for the session (Req 4.7)
             self.cached_tools = enabled_tools

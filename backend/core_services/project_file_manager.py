@@ -31,24 +31,10 @@ DOCUMENT_CONTENT_TYPES = {
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 }
 
-DOCUMENT_EXTENSIONS = {".txt", ".md", ".html", ".htm", ".pdf", ".docx"}
+DOCUMENT_EXTENSIONS = {".txt", ".md", ".html", ".htm", ".pdf", ".doc", ".docx", ".ppt", ".pptx", ".pptm", ".vsd", ".vsdx"}
 
 # Structured data files — stored under the data/ S3 prefix, never ingested into KB
-STRUCTURED_EXTENSIONS = {
-    ".csv",
-    ".tsv",
-    ".json",
-    ".yaml",
-    ".yml",
-    ".xls",
-    ".xlsx",
-    ".ppt",
-    ".pptx",
-    ".parquet",
-    ".jsonl",
-    ".arrow",
-    ".feather",
-}
+STRUCTURED_EXTENSIONS = {".csv", ".tsv", ".json", ".jsonl", ".parquet", ".xls", ".xlsx", ".xlsm", ".xlsb"}
 
 
 class ProjectFileManager:

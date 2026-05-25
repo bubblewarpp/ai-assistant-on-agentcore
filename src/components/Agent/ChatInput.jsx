@@ -320,6 +320,22 @@ const ChatInput = ({
     };
   }, [openDropdownId, closeDropdown]);
 
+  const handlePaste = useCallback(
+    (event) => {
+      const items = Array.from(event.clipboardData?.items || []);
+      const imageFiles = items
+        .filter((item) => item.type?.startsWith("image/"))
+        .map((item) => item.getAsFile())
+        .filter(Boolean);
+
+      if (imageFiles.length === 0) return;
+
+      event.preventDefault();
+      handleFileSelect(imageFiles);
+    },
+    [handleFileSelect]
+  );
+
   // Auto-resize textarea
   const adjustTextareaHeight = useCallback(() => {
     const textarea = textareaRef.current;
@@ -573,6 +589,7 @@ const ChatInput = ({
         <textarea
           ref={textareaRef}
           className="chat-textarea"
+          onPaste={handlePaste}
           placeholder={isStreaming ? "Streaming response..." : placeholder}
           value={message}
           onChange={handleInputChange}
