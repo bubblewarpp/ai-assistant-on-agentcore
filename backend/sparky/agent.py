@@ -31,6 +31,7 @@ from canvas import ALL_CREATE_TOOLS, update_canvas
 from project_kb_tool import search_project_knowledge_base
 from project_memory_tool import recall_project_memory
 from project_canvas_tool import load_project_canvas
+from context_mode import set_session_context_mode, clear_session_context_mode
 import jwt
 
 
@@ -161,6 +162,21 @@ async def invoke(request: InvocationRequest, http_request: Request):
 
     request_type = request.input.get("type")
 
+    # Context mode: New Context vs Saved Context.
+    # Frontend sends memory_mode/memoryMode on chat requests.
+    incoming_context_mode = (
+        request.input.get("memory_mode")
+        or request.input.get("memoryMode")
+        or request.input.get("context_mode")
+        or request.input.get("contextMode")
+    )
+    if incoming_context_mode:
+        active_context_mode = set_session_context_mode(session_id, incoming_context_mode)
+        logger.info(
+            f"CONTEXT_MODE_REQUEST session={session_id} user={user_sub} mode={active_context_mode}"
+        )
+
+
     # Session ownership validation — skip for ping and create_session
     if request_type not in (
         "ping",
@@ -193,6 +209,7 @@ async def invoke(request: InvocationRequest, http_request: Request):
         )
 
     if request_type == "delete_history":
+        clear_session_context_mode(session_id)
         await cancel_stream_async(session_id)
         return await handlers.handle_delete_history(session_id, user_sub)
 

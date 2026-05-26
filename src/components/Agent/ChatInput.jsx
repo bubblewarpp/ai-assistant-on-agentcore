@@ -77,6 +77,7 @@ const ChatInput = ({
   threadMode = false,
 }) => {
   const [message, setMessage] = useState("");
+  const [contextMode, setContextMode] = useState(() => localStorage.getItem("sparkyContextMode") || "saved");
   const [toggleStates, setToggleStates] = useState({});
   // Single state for which dropdown is open (replaces activeDropdown + visibleDropdown + dropdownStates + isClosing)
   const [openDropdownId, setOpenDropdownId] = useState(null);
@@ -94,6 +95,10 @@ const ChatInput = ({
   const lastSentAttachmentsRef = useRef([]);
   const { effectiveTheme } = useTheme();
   const functions = useContext(ChatSessionFunctionsContext);
+
+  useEffect(() => {
+    localStorage.setItem("sparkyContextMode", contextMode);
+  }, [contextMode]);
 
   const currentSessionId = sessionId;
   const processedThinkingBudget = thinkingBudget === false ? 0 : thinkingBudget;
@@ -361,6 +366,8 @@ const ChatInput = ({
       timestamp: new Date().toISOString(),
       toggleStates: { ...toggleStates },
       config: {
+          memoryMode: contextMode,
+          memory_mode: contextMode,
         model_id: getSelectedModelId(),
         budget_level: processedThinkingBudget,
         profile_id: getSelectedProfileId(),
@@ -586,7 +593,27 @@ const ChatInput = ({
           </div>
         )}
 
-        <textarea
+        
+          {!threadMode && (
+            <div className="context-mode-toggle" title="Choose whether this chat starts clean or uses saved memory.">
+              <button
+                type="button"
+                className={`context-mode-button ${contextMode === "new" ? "active" : ""}`}
+                onClick={() => setContextMode("new")}
+              >
+                New Context
+              </button>
+              <button
+                type="button"
+                className={`context-mode-button ${contextMode === "saved" ? "active" : ""}`}
+                onClick={() => setContextMode("saved")}
+              >
+                Saved Context
+              </button>
+            </div>
+          )}
+
+<textarea
           ref={textareaRef}
           className="chat-textarea"
           onPaste={handlePaste}

@@ -716,3 +716,59 @@ html.dark .research-button.toggled:hover {
 html.dark .research-button .dismiss-button:hover {
   opacity: 0.7;
 }
+
+/* New Context | Saved Context toggle */
+.context-mode-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+  margin: 0 0 8px 0;
+  width: fit-content;
+}
+
+.context-mode-button {
+  border: 0;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  color: #64748b;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.context-mode-button:hover {
+  background: rgba(148, 163, 184, 0.14);
+  color: #334155;
+}
+
+.context-mode-button.active {
+  background: #111827;
+  color: #ffffff;
+}
+
+[data-theme="dark"] .context-mode-toggle {
+  background: rgba(15, 23, 42, 0.72);
+  border-color: rgba(148, 163, 184, 0.28);
+}
+
+[data-theme="dark"] .context-mode-button {
+  color: #cbd5e1;
+}
+
+[data-theme="dark"] .context-mode-button:hover {
+  background: rgba(148, 163, 184, 0.18);
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .context-mode-button.active {
+  background: #f8fafc;
+  color: #0f172a;
+}

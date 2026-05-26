@@ -315,7 +315,7 @@ class StreamingHandler:
                 if memory_policy in ("global", "both"):
                     from user_preference_loader import get_user_preferences
 
-                    global_preferences = await get_user_preferences(user_id)
+                    global_preferences = await get_user_preferences(user_id, session_id)
 
                 # Get the appropriate agent based on mode, passing model_id for proper model selection
                 agent = await agent_manager.get_agent(

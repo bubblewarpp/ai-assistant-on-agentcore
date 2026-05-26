@@ -508,6 +508,12 @@ export const sendMessageAPI = async (
       if (config.budget_level !== undefined && config.budget_level !== null) {
         requestBody.input.budget_level = config.budget_level;
       }
+
+      if (config.memoryMode || config.memory_mode) {
+        requestBody.input.memory_mode = config.memoryMode || config.memory_mode;
+        requestBody.input.memoryMode = config.memoryMode || config.memory_mode;
+      }
+
       if (config.profile_id) {
         requestBody.input.profile_id = config.profile_id;
       }
