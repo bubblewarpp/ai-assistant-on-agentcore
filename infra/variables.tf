@@ -165,3 +165,21 @@ variable "kb_vector_store_type" {
     error_message = "kb_vector_store_type must be OPENSEARCH_SERVERLESS or S3_VECTORS."
   }
 }
+
+variable "system_mcp_servers" {
+  description = "System-level MCP servers available to all users by default. Each entry must have 'name' and 'transport' fields, plus 'url' for streamable_http or 'command'/'args' for stdio."
+  type = list(object({
+    name      = string
+    transport = string
+    url       = optional(string)
+    command   = optional(string)
+    args      = optional(list(string))
+  }))
+  default = [
+    {
+      name      = "aws-knowledge"
+      transport = "streamable_http"
+      url       = "https://knowledge-mcp.global.api.aws"
+    }
+  ]
+}

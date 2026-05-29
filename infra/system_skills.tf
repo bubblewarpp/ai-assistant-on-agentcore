@@ -17,6 +17,8 @@ locals {
   ]))
 
   # Read name and description from SKILL.md frontmatter for each skill
+  # Note: description parsing is handled by scripts/upsert_skill.py at apply time
+  # to correctly handle multi-line YAML block scalars
   system_skill_metadata = {
     for dir in local.system_skill_names : dir => {
       name = try(
@@ -25,13 +27,6 @@ locals {
           "name:", ""
         )),
         dir
-      )
-      description = try(
-        trimspace(replace(
-          regex("(?m)^description:.+$", file("${local.system_skills_path}/${dir}/SKILL.md")),
-          "description:", ""
-        )),
-        ""
       )
     }
   }
@@ -52,26 +47,18 @@ resource "null_resource" "system_skill_metadata" {
   for_each = local.system_skill_names
 
   triggers = {
-    skill_name  = lookup(local.system_skill_metadata[each.value], "name", each.value)
-    table_name  = aws_dynamodb_table.skills.name
-    description = lookup(local.system_skill_metadata[each.value], "description", "")
+    table_name    = aws_dynamodb_table.skills.name
+    region        = local.aws_region
+    # Re-run when SKILL.md changes
+    skill_md_hash = fileexists("${local.system_skills_path}/${each.value}/SKILL.md") ? filemd5("${local.system_skills_path}/${each.value}/SKILL.md") : "none"
   }
 
   provisioner "local-exec" {
-    command = <<-EOT
-      aws dynamodb put-item \
-        --table-name "${aws_dynamodb_table.skills.name}" \
-        --region "${local.aws_region}" \
-        --item '{
-          "user_id": {"S": "system"},
-          "skill_name": {"S": "${lookup(local.system_skill_metadata[each.value], "name", each.value)}"},
-          "description": {"S": "${replace(lookup(local.system_skill_metadata[each.value], "description", ""), "'", "'")}"},
-          "s3_content_path": {"S": "system/${each.value}/"},
-          "created_by": {"S": "system"},
-          "visibility": {"S": "public"},
-          "created_at": {"S": "${timestamp()}"},
-          "updated_at": {"S": "${timestamp()}"}
-        }'
-    EOT
+    command = "python3 ${path.module}/scripts/upsert_skill.py"
+    environment = {
+      SKILL_DIR  = "${local.system_skills_path}/${each.value}"
+      TABLE_NAME = aws_dynamodb_table.skills.name
+      REGION     = local.aws_region
+    }
   }
 }

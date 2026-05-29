@@ -2,9 +2,14 @@
 
 @layer base {
   :root {
+    /* Gradient background colors - Tokichan theme */
+    --gradient-from: 220 100% 98%;
+    --gradient-via: 260 100% 97%;
+    --gradient-to: 200 100% 98%;
+    
     --background: 0 0% 100%;
     --foreground: 224 71.4% 4.1%;
-    --card: 0 0% 96.1%;
+    --card: 0 0% 99%;
     --card-foreground: 224 71.4% 4.1%;
     --popover: 0 0% 100%;
     --popover-foreground: 224 71.4% 4.1%;
@@ -29,20 +34,25 @@
     --chart-5: 27 87% 67%;
 
     /* Sidebar light theme */
-    --sidebar-background: 0 0% 97%;
+    --sidebar-background: 0 0% 99%;
     --sidebar-foreground: 224 71.4% 4.1%;
     --sidebar-primary: 262.1 83.3% 57.8%;
     --sidebar-primary-foreground: 210 20% 98%;
-    --sidebar-accent: 0 0% 91.1%;
+    --sidebar-accent: 0 0% 94%;
     --sidebar-accent-foreground: 220.9 39.3% 11%;
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 262.1 83.3% 57.8%;
   }
 
   .dark {
+    /* Gradient background colors - Dark mode */
+    --gradient-from: 240 20% 8%;
+    --gradient-via: 260 25% 10%;
+    --gradient-to: 220 20% 9%;
+    
     --background: 0 0% 9%;
     --foreground: 210 20% 98%;
-    --card: 0 0% 11%;
+    --card: 0 0% 12%;
     --card-foreground: 210 20% 98%;
     --popover: 0 0% 9%;
     --popover-foreground: 210 20% 98%;
@@ -66,7 +76,7 @@
     --chart-5: 340 75% 55%;
 
     /* Sidebar dark theme */
-    --sidebar-background: 0 0% 7%;
+    --sidebar-background: 0 0% 8%;
     --sidebar-foreground: 210 20% 98%;
     --sidebar-primary: 263.4 70% 50.4%;
     --sidebar-primary-foreground: 210 20% 98%;
@@ -160,16 +170,91 @@
   html {
     @apply bg-background text-foreground;
     min-height: 100vh;
+    position: relative;
+  }
+  
+  /* Animated gradient background - Light mode */
+  html::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: -1;
+    background: linear-gradient(
+      135deg,
+      hsl(var(--gradient-from)) 0%,
+      hsl(var(--gradient-via)) 50%,
+      hsl(var(--gradient-to)) 100%
+    );
+    background-size: 200% 200%;
+    animation: gradientShift 15s ease infinite;
+  }
+  
+  /* Mesh gradient overlay for depth */
+  html::after {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: -1;
+    background-image: 
+      radial-gradient(at 20% 30%, hsla(260, 100%, 95%, 0.3) 0px, transparent 50%),
+      radial-gradient(at 80% 70%, hsla(220, 100%, 95%, 0.3) 0px, transparent 50%),
+      radial-gradient(at 50% 50%, hsla(240, 100%, 96%, 0.2) 0px, transparent 50%);
+    animation: meshMove 20s ease-in-out infinite;
+  }
+  
+  /* Dark mode gradient */
+  html.dark::before {
+    background: linear-gradient(
+      135deg,
+      hsl(var(--gradient-from)) 0%,
+      hsl(var(--gradient-via)) 50%,
+      hsl(var(--gradient-to)) 100%
+    );
+    background-size: 200% 200%;
+  }
+  
+  html.dark::after {
+    background-image: 
+      radial-gradient(at 20% 30%, hsla(260, 50%, 20%, 0.15) 0px, transparent 50%),
+      radial-gradient(at 80% 70%, hsla(220, 50%, 20%, 0.15) 0px, transparent 50%),
+      radial-gradient(at 50% 50%, hsla(240, 50%, 15%, 0.1) 0px, transparent 50%);
+  }
+  
+  @keyframes gradientShift {
+    0%, 100% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+  }
+  
+  @keyframes meshMove {
+    0%, 100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.8;
+      transform: scale(1.1);
+    }
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply text-foreground;
     min-height: 100vh;
+    background: transparent;
   }
 
   #root {
-    @apply bg-background;
     min-height: 100vh;
+    background: transparent;
   }
 
   /* Smooth theme transitions for sidebar */
@@ -449,19 +534,34 @@ html[data-canvas-open] .group\/sidebar-wrapper:not(:has([data-state="collapsed"]
 }
 
 /* Ensure background colors are applied in both light and dark modes */
-html,
-body,
-#root {
-  background-color: var(--color-background);
+html {
+  position: relative;
   color: var(--color-foreground);
 }
 
-html.dark,
-html.dark body,
-html.dark #root {
-  background-color: var(--color-background) !important;
+body {
+  background: transparent !important;
+  color: var(--color-foreground);
+}
+
+#root {
+  background: transparent !important;
+  color: var(--color-foreground);
+}
+
+html.dark {
   color: var(--color-foreground) !important;
   color-scheme: dark;
+}
+
+html.dark body {
+  background: transparent !important;
+  color: var(--color-foreground) !important;
+}
+
+html.dark #root {
+  background: transparent !important;
+  color: var(--color-foreground) !important;
 }
 
 /* Remove sidebar border completely */

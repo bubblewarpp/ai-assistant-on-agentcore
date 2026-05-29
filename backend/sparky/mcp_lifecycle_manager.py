@@ -234,12 +234,48 @@ class MCPLifecycleManager:
     async def startup(self) -> None:
         """Initialize the MCP lifecycle manager.
 
-        MCPs are now loaded exclusively through DynamoDB via reconcile(),
-        so startup simply initializes with an empty Runtime_Tool_Set.
+        Connects to system-level default MCP servers (available to all users)
+        at startup. These are loaded from the SYSTEM_MCP_SERVERS env var (JSON list).
+        User-specific MCPs are loaded via reconcile() during session init.
         """
-        logger.info(
-            "MCP lifecycle manager started — tools loaded via DynamoDB reconciliation"
-        )
+        import os as _os
+        import json as _json
+
+        # Load system-level default MCP servers from environment
+        raw = _os.environ.get("SYSTEM_MCP_SERVERS", "[]")
+        try:
+            system_servers = _json.loads(raw)
+        except Exception as e:
+            logger.warning("Failed to parse SYSTEM_MCP_SERVERS: %s — skipping", e)
+            system_servers = []
+
+        if system_servers:
+            logger.info(
+                "Connecting to %d system-level MCP server(s) at startup...",
+                len(system_servers),
+            )
+            validated = self.validate_config(
+                {s["name"]: s for s in system_servers if isinstance(s, dict) and "name" in s}
+            )
+            for name, cfg in validated.items():
+                conn = await self.connect_server(name, cfg)
+                if conn:
+                    self.server_connections[name] = conn
+                    for tool_entry in conn.tools:
+                        self.runtime_tool_set[tool_entry.name] = tool_entry
+                    logger.info(
+                        "System MCP server '%s' connected — %d tools registered",
+                        name,
+                        len(conn.tools),
+                    )
+                else:
+                    logger.warning(
+                        "System MCP server '%s' failed to connect at startup", name
+                    )
+        else:
+            logger.info(
+                "MCP lifecycle manager started — no system MCP servers configured"
+            )
 
     async def shutdown(self) -> None:
         """Gracefully close all MCP server connections.

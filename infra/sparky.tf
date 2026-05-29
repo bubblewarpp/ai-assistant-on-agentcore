@@ -30,6 +30,7 @@ resource "aws_bedrockagentcore_agent_runtime" "sparky" {
     CHECKPOINT_BUCKET_ENDPOINT = local.checkpoint_bucket_endpoint
     TASK_EXECUTIONS_TABLE      = aws_dynamodb_table.scheduled_task_executions.id
     TASK_EXECUTOR_CLIENT_ID    = aws_cognito_user_pool_client.task_executor.id
+    SYSTEM_MCP_SERVERS         = jsonencode(var.system_mcp_servers)
   }
   authorizer_configuration {
     custom_jwt_authorizer {
@@ -78,20 +79,7 @@ resource "null_resource" "docker_build_push" {
 
   provisioner "local-exec" {
     working_dir = "${path.module}/../backend/sparky"
-    command     = <<-EOT
-      # Get ECR login token
-      aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws
-      aws ecr get-login-password --region ${var.region} | docker login --username AWS --password-stdin ${aws_ecr_repository.sparky.repository_url}
-      
-      # Ensure buildx is set up
-      docker buildx create --use --name multiarch 2>/dev/null || docker buildx use multiarch
-      
-      # Build and push image for ARM64 with content-based tag
-      docker buildx build --platform linux/arm64 --build-arg AWS_REGION=${var.region} \
-        -t ${aws_ecr_repository.sparky.repository_url}:${local.sparky_image_tag} \
-        -t ${aws_ecr_repository.sparky.repository_url}:latest \
-        --push .
-    EOT
+    command     = "bash ${path.module}/scripts/docker_build_push.sh ${var.region} ${aws_ecr_repository.sparky.repository_url} ${local.sparky_image_tag} ."
   }
 }
 

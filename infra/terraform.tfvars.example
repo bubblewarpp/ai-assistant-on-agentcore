@@ -1,0 +1,133 @@
+# Terraform Variables Configuration Example
+# Copy this file to terraform.tfvars and fill in your actual values
+# terraform.tfvars is gitignored and will not be committed
+
+# Environment name (dev, staging, prod)
+env = "dev"
+
+# AWS Region for deployment
+# Common options: us-east-1, us-west-2, ap-southeast-1, eu-west-1
+region = "ap-southeast-1"
+
+# Cognito User Configuration
+# This user will be created as the initial admin user
+username     = "admin"
+email        = "your-email@example.com"
+given_name   = "Admin"
+family_name  = "User"
+
+# Data Expiry Configuration (30-365 days)
+# Controls TTL for DynamoDB, S3 lifecycle, and AgentCore Memory
+expiry_duration_days = 365
+
+# Deletion Protection (set to true for production)
+# When true, prevents accidental deletion of DynamoDB tables
+deletion_protection_enabled = false
+
+# Knowledge Base Vector Store Type
+# Options: "OPENSEARCH_SERVERLESS" or "S3_VECTORS"
+# S3_VECTORS is recommended for simplicity and cost
+kb_vector_store_type = "S3_VECTORS"
+
+# S3 Express One Zone Configuration (optional, for faster checkpoint access)
+# Only used when use_express_checkpoint_bucket = true
+use_express_checkpoint_bucket = false
+express_az_id                 = "apse1-az1"  # Change based on your region (e.g., use1-az4 for us-east-1)
+
+# Bedrock Model Configuration for Core Services
+# This model is used for synchronous operations like description generation
+model_core_services = "global.anthropic.claude-haiku-4-5-20251001-v1:0"
+
+# Rerank Model ARN
+# Used for Knowledge Base search result reranking
+rerank_model_arn = "arn:aws:bedrock:us-east-1::foundation-model/amazon.rerank-v1:0"
+
+# Project Memory Extraction Model
+# Used for project memory consolidation
+project_memory_extraction_model_id = "global.anthropic.claude-haiku-4-5-20251001-v1:0"
+
+# Enable/Disable Core Services Runtime
+# Set to false if you only want the Sparky agent runtime
+enable_core_services = true
+
+# Sparky Models Configuration
+# Define available models for the agent
+sparky_models = {
+  default_model_id = "amazon-nova-lite"
+  models = [
+    {
+      id               = "amazon-nova-lite"
+      label            = "Amazon Nova Lite"
+      description      = "Default low-cost Amazon Nova model"
+      model_id         = "apac.amazon.nova-lite-v1:0"
+      max_tokens       = 8000
+      reasoning_type   = "none"
+      reasoning_levels = []
+      reasoning_labels = []
+      budget_mapping   = {}
+      effort_mapping   = {}
+    },
+    {
+      id               = "amazon-nova-pro"
+      label            = "Amazon Nova Pro"
+      description      = "Stronger Amazon Nova model"
+      model_id         = "apac.amazon.nova-pro-v1:0"
+      max_tokens       = 8000
+      reasoning_type   = "none"
+      reasoning_levels = []
+      reasoning_labels = []
+      budget_mapping   = {}
+      effort_mapping   = {}
+    },
+    {
+      id               = "claude-sonnet-4"
+      label            = "Claude Sonnet 4"
+      description      = "Balanced Claude model - Limited to 32K tokens for cost control"
+      model_id         = "global.anthropic.claude-sonnet-4-20250514-v1:0"
+      max_tokens       = 32000
+      reasoning_type   = "budget"
+      reasoning_levels = ["Low", "Medium", "High", "Max"]
+      reasoning_labels = []
+      budget_mapping = {
+        "1" = 8000
+        "2" = 16000
+        "3" = 24000
+        "4" = 32000
+      }
+      effort_mapping = {}
+    },
+    {
+      id               = "claude-haiku-4.5"
+      label            = "Claude Haiku 4.5"
+      description      = "Fast and economical Claude model"
+      model_id         = "global.anthropic.claude-haiku-4-5-20251001-v1:0"
+      max_tokens       = 64000
+      reasoning_type   = "budget"
+      reasoning_levels = ["Low", "Medium", "High", "Max"]
+      reasoning_labels = []
+      budget_mapping = {
+        "1" = 16000
+        "2" = 30000
+        "3" = 42000
+        "4" = 63999
+      }
+      effort_mapping = {}
+    }
+  ]
+}
+
+# System-level MCP servers — available to ALL users by default (no per-user config needed)
+# Add more entries to expose additional public MCP servers to all users.
+system_mcp_servers = [
+  {
+    name      = "aws-knowledge"
+    transport = "streamable_http"
+    url       = "https://knowledge-mcp.global.api.aws"
+  }
+  # Add more system MCP servers here:
+  # {
+  #   name      = "my-other-mcp"
+  #   transport = "streamable_http"
+  #   url       = "https://my-mcp-server.example.com/mcp"
+  # }
+]

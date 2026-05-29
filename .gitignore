@@ -24,6 +24,10 @@ testuser.json
 .env.test.local
 .env.production.local
 
+# Development mode files (temporary)
+src/App.prod.jsx
+src/App.dev.jsx
+
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -32,6 +36,9 @@ yarn-error.log*
 .terraform.lock.hcl
 .terraform
 terraform.tfstate*
+terraform.tfvars
+*.tfvars
+!terraform.tfvars.example
 build.zip
 .env
 .deployment.config
