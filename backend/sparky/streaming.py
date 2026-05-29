@@ -214,6 +214,25 @@ class StreamingHandler:
                 memory_policy = "project"
                 profile_persona = "generic"
                 global_preferences = ""
+                from context_mode import get_session_context_mode, should_use_saved_context
+
+                context_mode = get_session_context_mode(session_id)
+                use_saved_context = should_use_saved_context(session_id)
+                memory_disabled_tools = (
+                    []
+                    if use_saved_context
+                    else [
+                        "remember_memory",
+                        "recall_user_memory",
+                        "recall_project_memory",
+                    ]
+                )
+                if not use_saved_context:
+                    logger.info(
+                        "CONTEXT_MODE_NEW_NO_SAVED_MEMORY session=%s mode=%s",
+                        session_id,
+                        context_mode,
+                    )
 
                 if profile_id:
                     from agent_profile_service import agent_profile_service
@@ -244,7 +263,6 @@ class StreamingHandler:
                 project_preferences = ""
                 if project_id:
                     from project_context import get_project_context
-                    from project_preference_loader import get_project_preferences
 
                     proj_ctx = await get_project_context(project_id, user_id)
                     if not proj_ctx:
@@ -259,13 +277,16 @@ class StreamingHandler:
                     project_files = proj_ctx.filenames
                     project_data_files = proj_ctx.data_files
                     project_canvases = proj_ctx.canvases
-                    project_preferences = await get_project_preferences(
-                        project_id, user_id
-                    )
                     if "search_project_knowledge_base" not in enabled_optional_tools:
                         enabled_optional_tools.append("search_project_knowledge_base")
-                    if "recall_project_memory" not in enabled_optional_tools:
-                        enabled_optional_tools.append("recall_project_memory")
+                    if use_saved_context:
+                        from project_preference_loader import get_project_preferences
+
+                        project_preferences = await get_project_preferences(
+                            project_id, user_id
+                        )
+                        if "recall_project_memory" not in enabled_optional_tools:
+                            enabled_optional_tools.append("recall_project_memory")
                     if (
                         proj_ctx.filenames or proj_ctx.data_files
                     ) and "load_project_file" not in enabled_optional_tools:
@@ -312,7 +333,9 @@ class StreamingHandler:
                         user_id, profile_persona
                     )
 
-                if memory_policy in ("global", "both"):
+                effective_memory_policy = memory_policy if use_saved_context else "off"
+
+                if effective_memory_policy in ("global", "both"):
                     from user_preference_loader import get_user_preferences
 
                     global_preferences = await get_user_preferences(user_id, session_id)
@@ -523,6 +546,7 @@ class StreamingHandler:
                         user_id=user_id or "",
                         session_id=session_id or "",
                         enabled_tools=enabled_optional_tools,
+                        disabled_tools=memory_disabled_tools,
                         model_id=model_id,
                         project_id=project_id,
                         project_name=project_name,
@@ -534,7 +558,7 @@ class StreamingHandler:
                         profile_id=profile_id,
                         profile_name=profile_name,
                         profile_prompt=profile_prompt,
-                        memory_policy=memory_policy,
+                        memory_policy=effective_memory_policy,
                         global_preferences=global_preferences,
                     ),
                 ):
@@ -1058,6 +1082,18 @@ async def _thread_streaming_body(
         # Core tools (fetch_skill, manage_skill, execute_code, etc.) are not
         # in OPTIONAL_TOOL_NAMES so they remain always-available.
         allowed_optional: list[str] = []
+        from context_mode import should_use_saved_context
+
+        use_saved_context = should_use_saved_context(session_id)
+        memory_disabled_tools = (
+            []
+            if use_saved_context
+            else [
+                "remember_memory",
+                "recall_user_memory",
+                "recall_project_memory",
+            ]
+        )
 
         # Inherit the parent session's project binding so threads share the
         # project's KB, memory, files, and preferences. Without this, a thread
@@ -1080,7 +1116,6 @@ async def _thread_streaming_body(
         if project_id:
             try:
                 from project_context import get_project_context
-                from project_preference_loader import get_project_preferences
 
                 proj_ctx = await get_project_context(project_id, user_id)
                 if proj_ctx:
@@ -1089,15 +1124,20 @@ async def _thread_streaming_body(
                     project_files = proj_ctx.filenames
                     project_data_files = proj_ctx.data_files
                     project_canvases = proj_ctx.canvases
-                    project_preferences = await get_project_preferences(
-                        project_id, user_id
-                    )
-                    for tool_name in (
-                        "search_project_knowledge_base",
-                        "recall_project_memory",
-                    ):
+                    if use_saved_context:
+                        from project_preference_loader import get_project_preferences
+
+                        project_preferences = await get_project_preferences(
+                            project_id, user_id
+                        )
+                    for tool_name in ("search_project_knowledge_base",):
                         if tool_name not in allowed_optional:
                             allowed_optional.append(tool_name)
+                    if (
+                        use_saved_context
+                        and "recall_project_memory" not in allowed_optional
+                    ):
+                        allowed_optional.append("recall_project_memory")
                     if (
                         proj_ctx.filenames or proj_ctx.data_files
                     ) and "load_project_file" not in allowed_optional:
@@ -1132,7 +1172,9 @@ async def _thread_streaming_body(
                 user_id=user_id or "",
                 session_id=session_id or "",
                 enabled_tools=allowed_optional,
-                disabled_tools=list(THREAD_DISABLED_TOOLS),
+                disabled_tools=list(
+                    THREAD_DISABLED_TOOLS | set(memory_disabled_tools)
+                ),
                 model_id=model_id,
                 thread_mode=True,
                 project_id=project_id,

@@ -217,7 +217,7 @@ export default function ProfilesPage() {
                   setDraft((prev) => ({ ...prev, default_model_id: e.target.value }))
                 }
               >
-                <option value="">Sparky default</option>
+                <option value="">Tokichan default</option>
                 {sparkyModelConfig.models.map((model) => (
                   <option key={model.id} value={model.id}>
                     {model.label}

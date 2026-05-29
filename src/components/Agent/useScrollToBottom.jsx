@@ -7,6 +7,7 @@ const SCROLL_CONFIG = {
   SMOOTH_DURATION: 400, // Animation duration in ms
   MIN_DISTANCE_FOR_SMOOTH: 10, // Minimum pixels to trigger smooth scroll
   NEAR_BOTTOM_THRESHOLD: 5, // Pixels from bottom to consider "at bottom"
+  STICKY_BOTTOM_THRESHOLD: 96, // Stay pinned while streaming unless the user scrolls away
   BUTTON_SHOW_THRESHOLD: 20, // Distance from bottom to show button
 };
 
@@ -40,6 +41,7 @@ export function useScrollToBottom(options = {}) {
   const isSmoothScrollingRef = useRef(false);
   const hasScrolledOnMountRef = useRef(false);
   const lastSessionIdRef = useRef(sessionId);
+  const isPinnedToBottomRef = useRef(true);
 
   // Callback ref - React calls this when the element mounts/unmounts
   const containerRef = useCallback(
@@ -66,6 +68,8 @@ export function useScrollToBottom(options = {}) {
       container.scrollHeight - container.scrollTop - container.clientHeight;
     const shouldShow = hasScroll && distanceFromBottom > SCROLL_CONFIG.BUTTON_SHOW_THRESHOLD;
 
+    isPinnedToBottomRef.current =
+      !hasScroll || distanceFromBottom <= SCROLL_CONFIG.STICKY_BOTTOM_THRESHOLD;
     setShowButton(shouldShow);
   }, [container]);
 
@@ -104,6 +108,7 @@ export function useScrollToBottom(options = {}) {
         }, SCROLL_CONFIG.SMOOTH_DURATION);
       } else {
         container.scrollTop = targetPosition;
+        isPinnedToBottomRef.current = true;
         checkScrollPosition();
       }
     },
@@ -116,6 +121,7 @@ export function useScrollToBottom(options = {}) {
   const scrollToBottomImmediate = useCallback(() => {
     if (container) {
       container.scrollTop = container.scrollHeight;
+      isPinnedToBottomRef.current = true;
       checkScrollPosition();
     }
   }, [container, checkScrollPosition]);
@@ -131,6 +137,7 @@ export function useScrollToBottom(options = {}) {
     if (hasScrollableContent) {
       hasScrolledOnMountRef.current = true;
       container.scrollTop = container.scrollHeight;
+      isPinnedToBottomRef.current = true;
       setIsReady(true);
     }
   }, [container]);
@@ -149,6 +156,7 @@ export function useScrollToBottom(options = {}) {
       if (container) {
         container.scrollTop = 0;
       }
+      isPinnedToBottomRef.current = true;
     }
   }, [sessionId, scrollOnMount, container]);
 
@@ -177,6 +185,10 @@ export function useScrollToBottom(options = {}) {
     // MutationObserver for DOM changes (new elements, text changes)
     mutationObserverRef.current = new MutationObserver(() => {
       requestAnimationFrame(() => {
+        if (isPinnedToBottomRef.current && !window.location.hash.startsWith("#msg-")) {
+          scrollToBottom(false);
+          return;
+        }
         checkScrollPosition();
         if (scrollOnMount && !hasScrolledOnMountRef.current) {
           performInitialScroll();
@@ -195,7 +207,13 @@ export function useScrollToBottom(options = {}) {
       // Only trigger if scrollHeight actually changed
       if (container.scrollHeight !== lastScrollHeightRef.current) {
         lastScrollHeightRef.current = container.scrollHeight;
-        requestAnimationFrame(checkScrollPosition);
+        requestAnimationFrame(() => {
+          if (isPinnedToBottomRef.current && !window.location.hash.startsWith("#msg-")) {
+            scrollToBottom(false);
+            return;
+          }
+          checkScrollPosition();
+        });
       }
     });
 
@@ -228,7 +246,7 @@ export function useScrollToBottom(options = {}) {
       resizeObserverRef.current?.disconnect();
       mutationObserverRef.current?.disconnect();
     };
-  }, [container, checkScrollPosition, scrollOnMount, performInitialScroll]);
+  }, [container, checkScrollPosition, scrollOnMount, performInitialScroll, scrollToBottom]);
 
   // Manual reset function (for edge cases)
   const resetForNewContent = useCallback(() => {

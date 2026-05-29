@@ -297,7 +297,7 @@ export default function SelectionMenu({
             }}
           >
             <MessageCirclePlus className="h-3.5 w-3.5" />
-            Ask Sparky
+            Ask Tokichan
           </button>,
           document.body
         )}

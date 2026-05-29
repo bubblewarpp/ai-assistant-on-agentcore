@@ -17,10 +17,10 @@ const MessageAvatar = ({ isUser, firstName, surname, loading }) => {
   ) : (
     <Avatar
       size="sm"
-      ariaLabel="Sparky"
+      ariaLabel="Tokichan"
       color="gen-ai"
       iconName="gen-ai"
-      tooltipText="Sparky"
+      tooltipText="Tokichan"
       loading={loading}
     />
   );

@@ -332,7 +332,7 @@ export default function ThreadDrawer({ sessionId, user = null }) {
           <ChatInput
             onSendMessage={handleSendFromInput}
             onStopStreaming={handleStop}
-            placeholder={threadIsStreaming ? "Sparky is replying…" : "Follow-up message…"}
+            placeholder={threadIsStreaming ? "Tokichan is replying…" : "Follow-up message…"}
             autoFocus={open}
             isStreaming={threadIsStreaming || isPending}
             disabled={isPending}

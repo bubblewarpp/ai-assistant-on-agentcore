@@ -19,7 +19,7 @@ export const getSelectedProfileId = () => {
 
 const DEFAULT_PROFILE = {
   profile_id: "",
-  name: "Sparky Default",
+  name: "Tokichan Default",
 };
 
 export default function ProfileSelector({ compact = false }) {

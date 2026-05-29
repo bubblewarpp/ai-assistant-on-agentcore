@@ -401,6 +401,7 @@ const ChatInput = ({
     toggleStates,
     attachedFiles,
     processedThinkingBudget,
+    contextMode,
   ]);
 
   const handleStopStreaming = useCallback(() => {

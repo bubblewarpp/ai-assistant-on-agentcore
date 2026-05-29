@@ -32,7 +32,6 @@ const ChatMessage = React.memo(
     turnIndex,
     boundProject = null,
   }) => {
-    const inputHeight = 200;
     const endMarker = message?.[message.length - 1];
     const isEnd = endMarker?.end === true;
     const checkpointId = endMarker?.checkpoint_id ?? null;
@@ -112,7 +111,6 @@ const ChatMessage = React.memo(
           columnGap: "8px",
           width: "100%",
           marginBottom: "20px",
-          height: isLast ? `calc(100vh - ${inputHeight}px)` : undefined,
         }}
       >
         <MessageAvatar isUser={false} loading={streaming && !isEnd} />
